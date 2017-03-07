@@ -26,8 +26,13 @@ class Action:
 
 class GameAgent:
     """
-    TODO
+    GameAgent class is responsible for passing the actions to the game.
+    For this it uses the pyuserinput module.
+    A action is performed in the game by emulating a keypress.
+    Besides this the GameAgent class is also responsible for retrieving the game status.
+    The logic for this is mostly implemented in the ..Handler.. class.
     """
+
     def __init__(self, host, port):
         # used to pass the actions
         self.mouse = pymouse.PyMouse()
@@ -45,7 +50,7 @@ class GameAgent:
         """
         Starts the game and lets the TRex run for half a second and then returns the initial state.
 
-        :return: the initial state of the game.
+        :return: the initial state of the game (np.array, reward, crashed).
         """
         x_dim, y_dim = self.mouse.screen_size()
         self.mouse.click(x_dim * .9, y_dim/4, 1)
