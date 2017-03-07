@@ -511,8 +511,6 @@
             window.addEventListener(Runner.events.FOCUS,
                 this.onVisibilityChange.bind(this));
 
-            console.log("start sending screen...");
-            setInterval(this.sendScreen,1000);
         },
 
         clearCanvas: function () {
@@ -879,17 +877,24 @@
             }
         },
 
-        sendScreen: function() {
-            console.log("in sendScreen function");
+        postState: function() {
+            console.log("in postState function");
             var canvas = document.getElementById('runner-id');
-            var context = canvas.getContext('2d');
-            var dataURL = canvas.toDataURL("image/png");
-            console.log(dataURL);
+            var dataUrl = canvas.toDataURL("image/png");
+
+            console.log(dataUrl);
+            console.log(this.crashed);
+
+            var state = {
+                world: dataUrl,
+                crashed: this.crashed.toString()
+            }
 
             $.ajax({
                 url: "http://127.0.0.1:9090",
                 type: "POST",
-                data: dataURL,
+                data: state,
+                dataType: "json",
                 success: function(response){
                     console.log("success");
                     }
@@ -2729,6 +2734,33 @@
 
 function onDocumentLoad() {
     new Runner('.interstitial-wrapper');
-}
+    window.addEventListener("keypress", keyPressHandler, false);
+
+};
+
+function keyPressHandler(e){
+    var keyCode = e.which;
+    if(keyCode == 80){
+        var runner = new Runner()
+        runner.postState();
+    }
+};
+
+//function sendScreen() {
+    //console.log("in sendScreen function 2");
+    //var canvas = document.getElementById('runner-id');
+    //var context = canvas.getContext('2d');
+    //var dataURL = canvas.toDataURL("image/png");
+    //console.log(dataURL);
+
+    //$.ajax({
+        //url: "http://127.0.0.1:9090",
+        //type: "POST",
+        //data: dataURL,
+        //success: function(response){
+            //console.log("success");
+        //}
+    //});
+//};
 
 document.addEventListener('DOMContentLoaded', onDocumentLoad);
