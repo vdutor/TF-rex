@@ -1,22 +1,13 @@
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from PIL import Image
 from io import BytesIO
-import SocketServer
+from websocket_server import WebsocketServer
 import base64
-import numpy as np
+import json
 import multiprocessing
+import numpy as np
 import threading
 import time
-import pymouse
-import pykeyboard
 import re
-
-key_up = pykeyboard.PyKeyboard().up_key
-key_down = pykeyboard.PyKeyboard().down_key
-key_get_state = 'P'
-
-queue = multiprocessing.Queue()
-
 
 class Action:
     UP = 0
@@ -32,19 +23,38 @@ class GameAgent:
     Besides this the GameAgent class is also responsible for retrieving the game status.
     The logic for this is mostly implemented in the ..Handler.. class.
     """
+    actions = {Action.UP:'UP', Action.DOWN:'DOWN', Action.FORWARD:'FORWARD'}
 
     def __init__(self, host, port):
-        # used to pass the actions
-        self.mouse = pymouse.PyMouse()
-        self.keyboard = pykeyboard.PyKeyboard()
-
-        # used to retrieve the state of the game
-        address = (host, port)
-        self.server = HTTPServer(address, Handler)
-        print "listening..."
-        thread = threading.Thread(target = self.server.serve_forever)
+        self.queue = multiprocessing.Queue()
+        self.game_client = None
+        self.server = WebsocketServer(port, host=host)
+        self.server.set_fn_new_client(self.new_client)
+        self.server.set_fn_message_received(self.new_message)
+        print "GameAgent: Listening..."
+        thread = threading.Thread(target = self.server.run_forever)
         thread.daemon = True
         thread.start()
+
+    def new_client(self, client, server):
+        print "GameAgent: Game just connected"
+        self.game_client = client
+        self.server.send_message(self.game_client, "Connection to Game Agent Established");
+
+    def new_message(self, client, server, message):
+        print "GameAgent: Incoming data from game"
+        data = json.loads(message)
+        image, crashed = data['world'], data['crashed']
+
+        # remove data-info at the beginning of the image
+        image = re.sub('data:image/png;base64,', '',image)
+        # convert image from base64 decoding to np array
+        image = np.array(Image.open(BytesIO(base64.b64decode(image))))
+
+        # cast to bool
+        crashed = True if crashed in ['True', 'true'] else False
+
+        self.queue.put((image, crashed))
 
     def startGame(self):
         """
@@ -52,13 +62,14 @@ class GameAgent:
 
         :return: the initial state of the game (np.array, reward, crashed).
         """
-        x_dim, y_dim = self.mouse.screen_size()
-        self.mouse.click(x_dim * .9, y_dim/4, 1)
-        time.sleep(.5)
-        self.keyboard.tap_key(key_up)
-        time.sleep(.5)
+        # game can not be started as long as the browser is not ready
+        while self.game_client is None:
+            time.sleep(1)
 
-        return self._get_state()
+        self.server.send_message(self.game_client, "START");
+        time.sleep(.5)
+        return self.get_state()
+
 
     def doAction(self, action):
         """
@@ -69,78 +80,16 @@ class GameAgent:
         :return: return the image of the game after performing the action, the reward (after the action) and
                         whether the TRex crashed or not.
         """
-        global queue
+        if not action == Action.FORWARD:
+            # noting needs to send when the action is going forward
+            self.server.send_message(self.game_client, self.actions[action]);
 
-        if action == Action.UP:
-            self.keyboard.tap_key(key_up)
-            time.sleep(.5)
-        elif action == Action.DOWN:
-            self.keyboard.press_key(key_down)
-            time.sleep(.5)
-            self.keyboard.release_key(key_down)
-        elif action == Action.FORWARD:
-            time.sleep(.5)
-            pass
-        else:
-            print "WARNING: wrong action passed to the game agent."
-            print "action not executed"
+        time.sleep(1)
+        return self.get_state()
 
-        return self._get_state()
+    def get_state(self):
+        self.server.send_message(self.game_client, "STATE");
 
-    def _get_state(self):
-        self.keyboard.tap_key(key_get_state)
-
-        image, crashed = queue.get()
+        image, crashed = self.queue.get()
         reward = -1 if crashed else 1
         return image, reward, crashed
-
-
-class Handler(BaseHTTPRequestHandler):
-    """
-    Class for receiving the image (game status) of the game.
-    The class forms the Connection between the game's javascript code and the python code.
-    The image of the game is sent through a HTTP Post from the js code to the python code.
-    This class parses the POST that contains plain texts (url encoded) to python objects
-    """
-
-    def __init__(self, request, client_address, server):
-        BaseHTTPRequestHandler.__init__(self, request, client_address, server)
-
-    def _set_headers(self):
-        self.send_response(200)
-        self.end_headers()
-
-    def do_POST(self):
-        global queue
-        self._set_headers()
-        content_length = int(self.headers['Content-Length'])
-        data = str(self.rfile.read(content_length))
-
-        image, crashed = self._process_post_content(data)
-        # place image and death-status in queue
-        queue.put((image, crashed))
-
-
-    def _process_post_content(self, data):
-        """
-        Ugly parsing...
-        TODO: look for other options
-        """
-        image = re.search('world=(.*)&', data).group(1)
-
-        # remove trailing 'data:image/png;base64,'
-        image = re.sub('data%3Aimage%2Fpng%3Bbase64%2C', '', image)
-        # from URL encoding to proper base 64
-        image = re.sub('%2B', '+', image)
-        image = re.sub('%3D', '=', image)
-        image = re.sub('%2F', '/', image)
-        crashed = re.search('&crashed=(.*)', data).group(1)
-        crashed = True if crashed in ['True', 'true'] else False
-
-        # convert image from base64 decoding to np array
-        image = np.array(Image.open(BytesIO(base64.b64decode(image))))
-
-        return image, crashed
-
-    def log_message(self, format, *args):
-        pass

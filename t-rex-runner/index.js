@@ -665,6 +665,8 @@
          * @param {Event} e
          */
         onKeyDown: function (e) {
+            var keyCodeS = String(e.keyCode);
+            console.log(keyCodeS)
             // Prevent native page scrolling whilst tapping on mobile.
             if (IS_MOBILE && this.playing) {
                 e.preventDefault();
@@ -877,7 +879,7 @@
             }
         },
 
-        postState: function() {
+        postState: function (ws) {
             console.log("in postState function");
             var canvas = document.getElementById('runner-id');
             var dataUrl = canvas.toDataURL("image/png");
@@ -890,15 +892,17 @@
                 crashed: this.crashed.toString()
             }
 
-            $.ajax({
-                url: "http://127.0.0.1:9090",
-                type: "POST",
-                data: state,
-                dataType: "json",
-                success: function(response){
-                    console.log("success");
-                    }
-                });
+            ws.send(JSON.stringify(state))
+
+            //$.ajax({
+                //url: "http://127.0.0.1:9090",
+                //type: "POST",
+                //data: state,
+                //dataType: "json",
+                //success: function(response){
+                    //console.log("success");
+                    //}
+                //});
             }
     };
 
@@ -2733,34 +2737,58 @@
 
 
 function onDocumentLoad() {
-    new Runner('.interstitial-wrapper');
-    window.addEventListener("keypress", keyPressHandler, false);
-
+    runner = new Runner('.interstitial-wrapper');
 };
 
-function keyPressHandler(e){
-    var keyCode = e.which;
-    if(keyCode == 80){
-        var runner = new Runner()
-        runner.postState();
+document.addEventListener('DOMContentLoaded', onDocumentLoad);
+
+var ws = new WebSocket("ws://localhost:9090");
+
+function simulateKey(type, keyCode) {
+     var eventObj = document.createEventObject ?
+         document.createEventObject() : document.createEvent("Events");
+
+     if(eventObj.initEvent){
+         eventObj.initEvent(type, true, true);
+     }
+
+    eventObj.keyCode = keyCode;
+    eventObj.which = keyCode;
+
+    document.dispatchEvent(eventObj)
+}
+
+
+ws.onopen = function()
+{
+    console.log("Browser is ready to start receiving commands...");
+};
+
+ws.onmessage = function (evt)
+{
+    var command = evt.data;
+    var runner = new Runner();
+    console.log(command);
+
+    switch (command) {
+        case 'STATE':
+            runner.postState(ws);
+            break;
+        case 'UP':
+        case 'START':
+            simulateKey("keydown", 38);
+            setTimeout(function() {simulateKey("keyup", 38);} , 800);
+            break;
+        case 'DOWN':
+            simulateKey("keydown", 40);
+            setTimeout(function() {simulateKey("keyup", 40);} , 800);
+            break;
+        default:
     }
 };
 
-//function sendScreen() {
-    //console.log("in sendScreen function 2");
-    //var canvas = document.getElementById('runner-id');
-    //var context = canvas.getContext('2d');
-    //var dataURL = canvas.toDataURL("image/png");
-    //console.log(dataURL);
-
-    //$.ajax({
-        //url: "http://127.0.0.1:9090",
-        //type: "POST",
-        //data: dataURL,
-        //success: function(response){
-            //console.log("success");
-        //}
-    //});
-//};
-
-document.addEventListener('DOMContentLoaded', onDocumentLoad);
+ws.onclose = function()
+{
+    // websocket is closed.
+    console.log("connection closed");
+};

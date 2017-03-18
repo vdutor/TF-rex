@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.misc import imresize
 import tensorflow as tf
 
+
 def processImage(image):
     processed = np.zeros((image.shape[0], image.shape[1]/2))
 
@@ -16,14 +17,13 @@ def processImage(image):
 
     processed = imresize(processed, (50, 100))
     processed = processed / 255.0
-    processed = np.reshape(processed, (1, -1))
+    # processed = np.reshape(processed, (1, -1))
     return processed
 
-agent = GameAgent('localhost', 9090)
+agent = GameAgent("127.0.0.1", 9090)
 
 # constants
 #############
-actions = {Action.UP:'up', Action.DOWN:'down', Action.FORWARD:'forward'}
 
 # the model
 #############
@@ -33,12 +33,12 @@ input_length = 50 * 100
 tf.reset_default_graph()
 #These lines establish the feed-forward part of the network used to choose actions
 inputs1 = tf.placeholder(shape=[1,input_length],dtype=tf.float32)
-W = tf.Variable(tf.random_uniform([input_length,len(actions)],0,0.01))
+W = tf.Variable(tf.random_uniform([input_length,len(GameAgent.actions)],0,0.01))
 Qout = tf.matmul(inputs1,W)
 predict = tf.argmax(Qout,1)
 
 #Below we obtain the loss by taking the sum of squares difference between the target and prediction Q values.
-nextQ = tf.placeholder(shape=[1,len(actions)],dtype=tf.float32)
+nextQ = tf.placeholder(shape=[1,len(GameAgent.actions)],dtype=tf.float32)
 loss = tf.reduce_sum(tf.square(nextQ - Qout))
 trainer = tf.train.GradientDescentOptimizer(learning_rate=0.1)
 updateModel = trainer.minimize(loss)
@@ -70,10 +70,10 @@ with tf.Session() as sess:
             #Choose an action by greedily (with e chance of random action) from the Q-network
             a,allQ = sess.run([predict,Qout],feed_dict={inputs1:s})
             if np.random.rand(1) < e:
-                a[0] = np.random.randint(len(actions))
+                a[0] = np.random.randint(len(GameAgent.actions))
 
             print "Q values in move {}       : {}".format(j,allQ)
-            print "Action selected in move {}: {}".format(j,actions[a[0]])
+            print "Action selected in move {}: {}".format(j,GameAgent.actions[a[0]])
             #Get new state and reward from environment
             im1,r,d = agent.doAction(a[0])
             s1 = processImage(im1)
