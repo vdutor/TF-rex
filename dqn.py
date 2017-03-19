@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import random
 
 class DQN:
 
@@ -66,3 +67,21 @@ class DQN:
         states = states.reshape(-1, self.height, self.width, 1)
         feed_dict = {self.state: states, self.actions: actions, self.Q_target: targets}
         return self.session.run(self.minimize, feed_dict)
+
+
+class Memory:
+
+    def __init__(self, size):
+        self.size = size
+        # self.mem = np.array(([None] * 5) * size)
+        self.mem = np.ndarray((size,5), dtype=object)
+        self.iter = 0
+
+    def add(self, state1, action, reward, state2, crashed):
+        self.mem[self.iter,:] = state1, action, reward, state2, crashed
+        self.iter = (self.iter + 1) % self.size
+
+    def sample(self, n):
+        random_idx = random.sample(range(self.size), n)
+        sample = self.mem[random_idx]
+        return (np.stack(sample[:,i], axis=0) for i in range(5))

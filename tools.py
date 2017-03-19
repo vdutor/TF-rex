@@ -1,3 +1,6 @@
+from scipy.misc import imresize
+import numpy as np
+
 def processImage(image):
     processed = np.zeros((image.shape[0], image.shape[1]/2))
 
