@@ -4,12 +4,18 @@ import tensorflow as tf
 class DQN:
 
     def __init__(self, height, width, num_actions):
+        tf.reset_default_graph()
+
         self.num_actions = num_actions
+        self.height = height
+        self.width = width
+
+        ## Constuction of the Graph
         # Input Layer
-        self.input =  tf.placeholder(shape=[None, height, width],dtype=tf.float32)
+        self.state =  tf.placeholder(shape=[None, height, width, 1],dtype=tf.float32)
 
         # Convolutional Layer #1
-        conv1 = tf.layers.conv2d(inputs=self.input, filters=32, kernel_size=[5, 5], padding="same", activation=tf.nn.relu)
+        conv1 = tf.layers.conv2d(inputs=self.state, filters=32, kernel_size=[5, 5], padding="same", activation=tf.nn.relu)
 
         # Pooling Layer #1
         pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
@@ -19,28 +25,44 @@ class DQN:
         pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
 
         # Dense Layer
-        pool2_flat = f.contrib.layers.flatten(pool2)
+        pool2_flat = tf.contrib.layers.flatten(pool2)
         dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
         # dropout = tf.layers.dropout(inputs=dense, rate=0.4, training=mode == learn.ModeKeys.TRAIN)
 
         # all Q values
-        self.Qs = tf.layers.dense(inputs=dense, units=num_actions)
+        self.Qs = tf.layers.dense(inputs=dense, units=num_actions, activation=None)
         # action with highest Q values
-        self.a = tf.argmax(Qs, 1)
+        self.a = tf.argmax(self.Qs, 1)
         # Q value belonging to selected action
-        self.Q = tf.reduce_max(Qs, 1)
+        self.Q = tf.reduce_max(self.Qs, 1)
 
-    def best_action(self):
-        return self.a
+        # For training
+        self.Q_target = tf.placeholder(shape=[None], dtype=tf.float32)
+        self.actions = tf.placeholder(shape=[None], dtype=tf.int32)
+        actions_onehot = tf.one_hot(self.actions, num_actions, on_value=1., off_value=0., axis=1, dtype=tf.float32)
+
+        Q_tmp = tf.reduce_sum(tf.multiply(self.Qs, actions_onehot), axis=1)
+        loss = tf.reduce_mean(tf.square(self.Q_target - Q_tmp))
+        optimizer = tf.train.AdamOptimizer()
+        self.minimize = optimizer.minimize(loss)
+
+        # Prepare session
+        init = tf.global_variables_initializer()
+        self.session = tf.Session()
+        self.session.run(init)
+
+    def get_action(self, state):
+        """
+        returns array:
+            array[0]: actions: is a array of length len(state) with the action with the highest score
+            array[1]: q value: is a array of length len(state) with the Q-value belonging to the action
+            array[2]: q values: is a array of shape (len(state), num_actions) with all the Q-values
+        """
+        state = state.reshape(-1, self.height, self.width, 1)
+        return self.session.run([self.a, self.Q, self.Qs], {self.state: state})
 
 
-    def loss(self):
-        Q_target = tf.placeholder(shape=[None],dtype=tf.float32)
-        actions = tf.placeholder(shape=[None],dtype=tf.int32)
-        actions_onehot = tf.one_hot(actions, num_actions, on_value=1, off_value=0, axis=1, dtype=tf.float32)
-
-        # Q = tf.reduce_sum(tf.mul(self.Qout, self.actions_onehot), reduction_indices=1)
-        # td_error = tf.square(Q_target - self.Q)
-        # loss = tf.reduce_mean(self.td_error)
-        # trainer = tf.train.AdamOptimizer(learning_rate=0.0001)
-        # updateModel = self.trainer.minimize(self.loss)
+    def train(self, states, actions, targets):
+        states = states.reshape(-1, self.height, self.width, 1)
+        feed_dict = {self.state: states, self.actions: actions, self.Q_target: targets}
+        return self.session.run(self.minimize, feed_dict)

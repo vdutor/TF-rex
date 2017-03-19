@@ -3,10 +3,9 @@ In this project we try to play Google's T-rex game using Reinforcement Learning.
 
 ### Dependencies
  - Pillow 4.0.0
- - PyUserInput 0.1.11
  - scipy 0.18.1
  - tensorflow 1.0.0
- 
+
 ### Setup
 
 For Debian, Ubuntu, and Ubuntu-based distro:
