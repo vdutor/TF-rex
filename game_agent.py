@@ -25,7 +25,8 @@ class GameAgent:
     """
     actions = {Action.UP:'UP', Action.DOWN:'DOWN', Action.FORWARD:'FORWARD'}
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, debug=False):
+        self.debug = debug
         self.queue = multiprocessing.Queue()
         self.game_client = None
         self.server = WebsocketServer(port, host=host)
@@ -42,7 +43,7 @@ class GameAgent:
         self.server.send_message(self.game_client, "Connection to Game Agent Established");
 
     def new_message(self, client, server, message):
-        print "GameAgent: Incoming data from game"
+        if self.debug: print "GameAgent: Incoming data from game"
         data = json.loads(message)
         image, crashed = data['world'], data['crashed']
 
@@ -67,7 +68,7 @@ class GameAgent:
             time.sleep(1)
 
         self.server.send_message(self.game_client, "START");
-        time.sleep(.5)
+        time.sleep(2)
         return self.get_state()
 
 
@@ -91,5 +92,5 @@ class GameAgent:
         self.server.send_message(self.game_client, "STATE");
 
         image, crashed = self.queue.get()
-        reward = -1 if crashed else 1
+        reward = -1. if crashed else 1.
         return image, reward, crashed

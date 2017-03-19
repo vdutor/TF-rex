@@ -1,11 +1,19 @@
 import numpy as np
 import tensorflow as tf
 import random
+import os
 
 class DQN:
 
-    def __init__(self, height, width, num_actions):
+    def __init__(self, height, width, num_actions, path=None):
+
+        if path is not None and os.path.exists(path):
+            print "PATH FOR STORING RESULTS ALREADY EXISTS!"
+            exit(1)
+        os.makedirs(path)
+        self.save_cnt = 0
         tf.reset_default_graph()
+        self.path = path
 
         self.num_actions = num_actions
         self.height = height
@@ -49,31 +57,44 @@ class DQN:
 
         # Prepare session
         init = tf.global_variables_initializer()
+        self.saver = tf.train.Saver()
         self.session = tf.Session()
         self.session.run(init)
 
-    def get_action(self, state):
+    def get_action_and_q(self, states):
         """
         returns array:
             array[0]: actions: is a array of length len(state) with the action with the highest score
             array[1]: q value: is a array of length len(state) with the Q-value belonging to the action
-            array[2]: q values: is a array of shape (len(state), num_actions) with all the Q-values
         """
-        state = state.reshape(-1, self.height, self.width, 1)
-        return self.session.run([self.a, self.Q, self.Qs], {self.state: state})
+        states = states.reshape(-1, self.height, self.width, 1)
+        return self.session.run([self.a, self.Q], {self.state: states})
 
+    def get_action(self, states):
+        """
+        returns action(s),
+            - if states contains only a single state then we return the optimal action as an integer,
+            - if states contains an array of states then we return the optimal action for each state of the array
+        """
+        states = states.reshape(-1, self.height, self.width, 1)
+        num_states = states.shape[0]
+        actions = self.session.run(self.a, {self.state: states})
+        return actions[0] if num_states == 1 else actions
 
     def train(self, states, actions, targets):
         states = states.reshape(-1, self.height, self.width, 1)
         feed_dict = {self.state: states, self.actions: actions, self.Q_target: targets}
-        return self.session.run(self.minimize, feed_dict)
+        self.session.run(self.minimize, feed_dict)
+
+    def save(self):
+        self.saver.save(self.session, self.path + '/model', global_step = self.save_cnt)
+        self.save_cnt += 1
 
 
 class Memory:
 
     def __init__(self, size):
         self.size = size
-        # self.mem = np.array(([None] * 5) * size)
         self.mem = np.ndarray((size,5), dtype=object)
         self.iter = 0
 
@@ -82,6 +103,7 @@ class Memory:
         self.iter = (self.iter + 1) % self.size
 
     def sample(self, n):
-        random_idx = random.sample(range(self.size), n)
+        n = min(self.iter+1, n)
+        random_idx = random.sample(range(min(self.size, self.iter+1)), n)
         sample = self.mem[random_idx]
         return (np.stack(sample[:,i], axis=0) for i in range(5))

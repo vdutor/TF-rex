@@ -1,7 +1,7 @@
 from scipy.misc import imresize
 import numpy as np
 
-def processImage(image):
+def process(image, height, width):
     processed = np.zeros((image.shape[0], image.shape[1]/2))
 
     roi = image[:,:300,0]
