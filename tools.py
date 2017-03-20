@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 from scipy.misc import imresize
 import numpy as np
 
@@ -14,4 +15,17 @@ def process(image, height, width):
     processed = processed / 255.0
     return processed
 
+def plot_progress(epoch_rewards, epoch_length, path):
+    num_epochs = len(epoch_rewards)
+    x = range(num_epochs)
+
+    # total rewards in function of the epoch number
+    plt.plot(x, epoch_rewards, c='red', label='reward')
+    plt.savefig(path + "/reward_" + str(num_epochs) + ".png", format = "png")
+    plt.clf()
+
+    # total number of steps in function of the epoch number
+    plt.plot(x, epoch_length, c='red', label='reward')
+    plt.savefig(path + "/length_" + str(num_epochs) + ".png", format = "png")
+    plt.clf()
 
