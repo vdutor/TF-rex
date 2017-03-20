@@ -1,4 +1,4 @@
-from tools import process
+from tools import process, plot_progress
 import dqn
 import game_agent
 import numpy as np
@@ -9,21 +9,23 @@ import time
 height = 50
 width = 100
 memory_size = 2000
-explore_prob = 1
+explore_prob = 1.
 explore_stop = .01
 explore_anneling = 1000
 explore_delta = (explore_prob - explore_stop) / explore_anneling
-pretraining_steps =  100 # 10000
-batch_size = 32 # TODO: set higher 32
+pretraining_steps =  100
+batch_size = 32
 training_hz = 5
 discount = .99
 num_epoch = 1000
 len_epoch = 10000
 num_actions = len(game_agent.GameAgent.actions)
-save_hz = 30 * 60 # save every 30 min
+save_hz = 20 * 60   # save every 20 min
+path = "./results1" # relative path, where results are stored
+
 
 memory = dqn.Memory(memory_size)
-network = dqn.DQN(height, width, num_actions, "results1")
+network = dqn.DQN(height, width, num_actions, path)
 agent = game_agent.GameAgent("127.0.0.1", 9090)
 
 steps_epoch = []
@@ -32,9 +34,9 @@ steps_to_train = training_hz
 time_last_save = time.time()
 
 for epoch in range(num_epoch):
-    print "Epoch: ", epoch
+    print "\nEpoch: ", epoch
 
-    state,_,crashed = agent.startGame()
+    state,_,crashed = agent.start_game()
     state = process(state, height, width)
     step = 0
     total_reward = 0
@@ -43,16 +45,18 @@ for epoch in range(num_epoch):
         # keep track how many pretraining steps we still have to execute
         pretraining_steps = max(pretraining_steps - 1, 0)
 
-        explore = rnd.rand(1) <= explore_prob or pretraining_steps > 0
+        explore = rnd.rand() <= explore_prob or pretraining_steps > 0
         action = rnd.randint(num_actions) if explore else network.get_action(state)
-        state_next, reward, crashed = agent.doAction(action)
-        print "action: {}\t crashed: {}\t explored: {}" \
-                .format(game_agent.GameAgent.actions[action], crashed, explore)
+        state_next, reward, crashed = agent.do_action(action)
+        print "action: {}\t crashed: {}\t random action: {} (prob: {})" \
+                .format(game_agent.GameAgent.actions[action], crashed, explore, round(explore_prob,2))
         state_next = process(state_next, height, width)
 
         memory.add(state, action, reward, state_next, crashed)
 
         if pretraining_steps <= 0 and steps_to_train <= 0:
+            print "...\nTraining network\n..."
+
             # reduce exploration probability, can not be smaller than explore_stop
             explore_prob = max(explore_stop, explore_prob - explore_delta)
 
@@ -60,7 +64,6 @@ for epoch in range(num_epoch):
             target = rewards
             # add Q value of next state to not terminal states (i.e. not crashed)
             target[~crashes] += discount * network.get_action_and_q(states_next[~crashes])[1]
-            print "Training network"
             network.train(states, actions, target)
 
             steps_to_train = training_hz
@@ -71,7 +74,7 @@ for epoch in range(num_epoch):
         total_reward += reward
 
     steps_epoch.append(step)
-    reward_epoch.append(reward)
+    reward_epoch.append(total_reward)
     print "Number of steps in epoch: ", step
     print "Total reward in epoch :", total_reward
 
@@ -79,5 +82,7 @@ for epoch in range(num_epoch):
         network.save()
         time_last_save = time.time()
         print "Network saved"
+
+        plot_progress(reward_epoch, steps_epoch, path)
 
 network.save()
