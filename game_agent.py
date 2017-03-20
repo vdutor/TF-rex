@@ -32,7 +32,7 @@ class GameAgent:
         self.server = WebsocketServer(port, host=host)
         self.server.set_fn_new_client(self.new_client)
         self.server.set_fn_message_received(self.new_message)
-        print "GameAgent: Listening..."
+        print "\nGame can be connected (press F5 in Browser)"
         thread = threading.Thread(target = self.server.run_forever)
         thread.daemon = True
         thread.start()
@@ -57,7 +57,7 @@ class GameAgent:
 
         self.queue.put((image, crashed))
 
-    def startGame(self):
+    def start_game(self):
         """
         Starts the game and lets the TRex run for half a second and then returns the initial state.
 
@@ -72,7 +72,7 @@ class GameAgent:
         return self.get_state()
 
 
-    def doAction(self, action):
+    def do_action(self, action):
         """
         Performs action and returns the updated status
 
