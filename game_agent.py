@@ -11,8 +11,8 @@ import re
 
 class Action:
     UP = 0
-    DOWN = 1
-    FORWARD = 2
+    # DOWN = 1
+    FORWARD = 1
 
 
 class GameAgent:
@@ -23,7 +23,7 @@ class GameAgent:
     Besides this the GameAgent class is also responsible for retrieving the game status.
     The logic for this is mostly implemented in the ..Handler.. class.
     """
-    actions = {Action.UP:'UP', Action.DOWN:'DOWN', Action.FORWARD:'FORWARD'}
+    actions = {Action.UP:'UP', Action.FORWARD:'FORWARD'}
 
     def __init__(self, host, port, debug=False):
         self.debug = debug
@@ -81,11 +81,11 @@ class GameAgent:
         :return: return the image of the game after performing the action, the reward (after the action) and
                         whether the TRex crashed or not.
         """
-        if not action == Action.FORWARD:
+        if action != Action.FORWARD:
             # noting needs to send when the action is going forward
             self.server.send_message(self.game_client, self.actions[action]);
 
-        time.sleep(1)
+        time.sleep(.4)
         return self.get_state()
 
     def get_state(self):

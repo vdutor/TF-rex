@@ -2777,11 +2777,11 @@ ws.onmessage = function (evt)
         case 'UP':
         case 'START':
             simulateKey("keydown", 38);
-            setTimeout(function() {simulateKey("keyup", 38);} , 800);
+            setTimeout(function() {simulateKey("keyup", 38);} , 400);
             break;
         case 'DOWN':
             simulateKey("keydown", 40);
-            setTimeout(function() {simulateKey("keyup", 40);} , 800);
+            setTimeout(function() {simulateKey("keyup", 40);} , 400);
             break;
         default:
     }

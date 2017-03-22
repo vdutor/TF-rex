@@ -3,9 +3,11 @@ from scipy.misc import imresize
 import numpy as np
 
 def process(image, height, width):
-    processed = np.zeros((image.shape[0], image.shape[1]/2))
+    roi_height, roi_width = image.shape[0], int(image.shape[1] * .6)
+    print roi_width
+    processed = np.zeros((roi_height, roi_width))
 
-    roi = image[:,:300,0]
+    roi = image[:,:roi_width,0]
     all_obstacles_idx = roi > 50
     processed[all_obstacles_idx] = 1
     unharmful_obstacles_idx = roi > 200

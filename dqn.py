@@ -3,20 +3,53 @@ import tensorflow as tf
 import random
 import os
 
+def conv2d(x, output_dim, kernel_shape, stride, name):
+
+    stride = [1, stride[0], stride[1], 1]
+    # kernel_shape = [kernel_size[0], kernel_size[1], x.get_shape()[-1], output_dim]
+
+    with tf.variable_scope(name):
+        w = tf.Variable(tf.truncated_normal(kernel_shape, 0, .02), dtype=tf.float32, name="w")
+        conv = tf.nn.conv2d(x, w, stride, "VALID")
+
+        b = tf.Variable(tf.zeros([output_dim]), name="b")
+        out = tf.nn.bias_add(conv, b)
+
+        out = tf.nn.relu(out)
+
+    return out, w, b
+
+def linear(x, output_size, name, activation_fn=tf.nn.relu):
+    shape = x.get_shape().as_list()
+
+    with tf.variable_scope(name):
+        w = tf.Variable(tf.random_normal([shape[1], output_size], stddev=.02), dtype=tf.float32, name='w')
+        b = tf.Variable(tf.zeros([output_size]), name='b')
+
+        out = tf.nn.bias_add(tf.matmul(x, w), b)
+
+        if activation_fn != None:
+            out =  activation_fn(out)
+
+    return out, w, b
+
 class DQN:
 
-    def __init__(self, height, width, num_actions, path=None):
+    def __init__(self, height, width, num_actions, name, path=None):
 
-        if path is not None and os.path.exists(path):
-            print "PATH FOR STORING RESULTS ALREADY EXISTS!"
-            exit(1)
-        os.makedirs(path)
+        if path is not None:
+            if os.path.exists(path):
+                print "PATH FOR STORING RESULTS ALREADY EXISTS!"
+                exit(1)
+            os.makedirs(path)
 
         self.save_cnt = 0
         self.path = path
         self.num_actions = num_actions
         self.height = height
         self.width = width
+        self.name = name
+        self.vars = []
 
         self._create_network()
 
@@ -52,46 +85,65 @@ class DQN:
         self.session.run(self.minimize, feed_dict)
 
     def save(self):
-        self.saver.save(self.session, self.path + '/model', global_step = self.save_cnt)
-        self.save_cnt += 1
+        if self.path is not None:
+            self.saver.save(self.session, self.path + '/model', global_step = self.save_cnt)
+            self.save_cnt += 1
+
+    def tranfer_variables_from(self, other):
+        """
+            Builds the operations required to transfer the values of the variables
+            from other to self
+        """
+        ops = []
+        for var_self, var_other in zip(self.vars, other.vars):
+            print var_self.name
+            print var_other.name
+            ops.append(var_self.assign(var_other.value()))
+
+        for op in ops:
+            self.session.run(op)
+
 
     def _create_network(self):
-        tf.reset_default_graph()
+        # tf.reset_default_graph()
 
         # Input Layer
-        self.state =  tf.placeholder(shape=[None, self.height, self.width, 1],dtype=tf.float32)
+        with tf.variable_scope(self.name):
+            self.state =  tf.placeholder(shape=[None, self.height, self.width, 1],dtype=tf.float32)
 
-        # Convolutional Layer #1
-        conv1 = tf.layers.conv2d(inputs=self.state, filters=32, kernel_size=[5, 5], padding="same", activation=tf.nn.relu)
+            conv1, w1, b1 = conv2d(self.state, 32, [8, 8, 1, 32], [4, 4], "conv1")
+            conv2, w2, b2 = conv2d(conv1, 64, [4, 4, 32, 64], [2, 2], "conv2")
+            conv3, w3, b3 = conv2d(conv2, 64, [3, 3, 64, 64], [1, 1], "conv3")
+            self.vars += [w1, b1, w2, b2, w3, b3]
 
-        # Pooling Layer #1
-        pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
+            shape = conv3.get_shape().as_list()
+            conv3_flat = tf.reshape(conv3, [-1, reduce(lambda x, y: x * y, shape[1:])])
 
-        # Convolutional Layer #2 and Pooling Layer #2
-        conv2 = tf.layers.conv2d( inputs=pool1, filters=64, kernel_size=[5, 5], padding="same", activation=tf.nn.relu)
-        pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
+            # Dueling
+            value_hid, w4, b4 = linear(conv3_flat, 512, "value_hid")
+            adv_hid, w5, b5 = linear(conv3_flat, 512, "adv_hid")
 
-        # Dense Layer
-        pool2_flat = tf.contrib.layers.flatten(pool2)
-        dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
-        # dropout = tf.layers.dropout(inputs=dense, rate=0.4, training=mode == learn.ModeKeys.TRAIN)
+            value, w6, b6 = linear(value_hid, 1, "value", activation_fn=None)
+            advantage, w7, b7 = linear(adv_hid, self.num_actions, "advantage", activation_fn=None)
+            self.vars += [w4, b4, w5, b5, w6, b6, w7, b7]
 
-        # all Q values
-        self.Qs = tf.layers.dense(inputs=dense, units=self.num_actions, activation=None)
-        # action with highest Q values
-        self.a = tf.argmax(self.Qs, 1)
-        # Q value belonging to selected action
-        self.Q = tf.reduce_max(self.Qs, 1)
+            # Average Dueling
+            self.Qs = value + (advantage - tf.reduce_mean(advantage, axis=1, keep_dims=True))
 
-        # For training
-        self.Q_target = tf.placeholder(shape=[None], dtype=tf.float32)
-        self.actions = tf.placeholder(shape=[None], dtype=tf.int32)
-        actions_onehot = tf.one_hot(self.actions, self.num_actions, on_value=1., off_value=0., axis=1, dtype=tf.float32)
+            # action with highest Q values
+            self.a = tf.argmax(self.Qs, 1)
+            # Q value belonging to selected action
+            self.Q = tf.reduce_max(self.Qs, 1)
 
-        Q_tmp = tf.reduce_sum(tf.multiply(self.Qs, actions_onehot), axis=1)
-        loss = tf.reduce_mean(tf.square(self.Q_target - Q_tmp))
-        optimizer = tf.train.AdamOptimizer()
-        self.minimize = optimizer.minimize(loss)
+            # For training
+            self.Q_target = tf.placeholder(shape=[None], dtype=tf.float32)
+            self.actions = tf.placeholder(shape=[None], dtype=tf.int32)
+            actions_onehot = tf.one_hot(self.actions, self.num_actions, on_value=1., off_value=0., axis=1, dtype=tf.float32)
+
+            Q_tmp = tf.reduce_sum(tf.multiply(self.Qs, actions_onehot), axis=1)
+            loss = tf.reduce_mean(tf.square(self.Q_target - Q_tmp))
+            optimizer = tf.train.AdamOptimizer()
+            self.minimize = optimizer.minimize(loss)
 
 
 class Memory:

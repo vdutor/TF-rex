@@ -5,6 +5,8 @@ import numpy as np
 import numpy.random as rnd
 import time
 
+import matplotlib.pyplot as plt
+
 ## Constants
 height = 50
 width = 100
@@ -21,11 +23,26 @@ num_epoch = 1000
 len_epoch = 10000
 num_actions = len(game_agent.GameAgent.actions)
 save_hz = 20 * 60   # save every 20 min
-path = "./results1" # relative path, where results are stored
+path = "./results2" # relative path, where results are stored
 
+
+state = rnd.rand(1, height, width, 1)
 
 memory = dqn.Memory(memory_size)
-network = dqn.DQN(height, width, num_actions, path)
+main_dqn = dqn.DQN(height, width, num_actions, "main", None)
+target_dqn = dqn.DQN(height, width, num_actions, "target", None)
+
+print main_dqn.get_action_and_q(state)
+print target_dqn.get_action_and_q(state)
+
+target_dqn.tranfer_variables_from(main_dqn)
+
+print main_dqn.get_action_and_q(state)
+print target_dqn.get_action_and_q(state)
+
+
+exit(0)
+
 agent = game_agent.GameAgent("127.0.0.1", 9090)
 
 steps_epoch = []
@@ -67,6 +84,14 @@ for epoch in range(num_epoch):
             network.train(states, actions, target)
 
             steps_to_train = training_hz
+
+        fig = plt.figure()
+        ax = fig.add_subplot('121')
+        ax.imshow(state)
+        ax = fig.add_subplot('122')
+        ax.imshow(state_next)
+        name =  "{}-{}_{}_{}.png".format(epoch, step, game_agent.GameAgent.actions[action], "crashed" if crashed else "alive")
+        plt.savefig(path + "/" + name, format='png')
 
         steps_to_train -= 1
         state = state_next
