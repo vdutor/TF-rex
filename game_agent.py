@@ -85,7 +85,7 @@ class GameAgent:
             # noting needs to send when the action is going forward
             self.server.send_message(self.game_client, self.actions[action]);
 
-        time.sleep(.4)
+        time.sleep(.25)
         return self.get_state()
 
     def get_state(self):

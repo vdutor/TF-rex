@@ -1,6 +1,7 @@
-import matplotlib.pyplot as plt
 from scipy.misc import imresize
+import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow as tf
 
 def process(image, height, width):
     roi_height, roi_width = image.shape[0], int(image.shape[1] * .6)
@@ -17,6 +18,7 @@ def process(image, height, width):
     processed = processed / 255.0
     return processed
 
+
 def plot_progress(epoch_rewards, epoch_length, path):
     num_epochs = len(epoch_rewards)
     x = range(num_epochs)
@@ -31,3 +33,28 @@ def plot_progress(epoch_rewards, epoch_length, path):
     plt.savefig(path + "/length_" + str(num_epochs) + ".png", format = "png")
     plt.clf()
 
+
+def conv2d(x, output_dim, kernel_shape, stride, name):
+    stride = [1, stride[0], stride[1], 1]
+
+    with tf.variable_scope(name):
+        w = tf.Variable(tf.truncated_normal(kernel_shape, 0, .02), dtype=tf.float32, name="w")
+        conv = tf.nn.conv2d(x, w, stride, "VALID")
+        b = tf.Variable(tf.zeros([output_dim]), name="b")
+        out = tf.nn.bias_add(conv, b)
+        out = tf.nn.relu(out)
+
+    return out, w, b
+
+def linear(x, output_size, name, activation_fn=tf.nn.relu):
+    shape = x.get_shape().as_list()
+
+    with tf.variable_scope(name):
+        w = tf.Variable(tf.random_normal([shape[1], output_size], stddev=.02), dtype=tf.float32, name='w')
+        b = tf.Variable(tf.zeros([output_size]), name='b')
+        out = tf.nn.bias_add(tf.matmul(x, w), b)
+
+        if activation_fn != None:
+            out =  activation_fn(out)
+
+    return out, w, b

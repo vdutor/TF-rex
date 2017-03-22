@@ -2,40 +2,12 @@ import numpy as np
 import tensorflow as tf
 import random
 import os
+from tools import conv2d, linear
 
-def conv2d(x, output_dim, kernel_shape, stride, name):
-
-    stride = [1, stride[0], stride[1], 1]
-    # kernel_shape = [kernel_size[0], kernel_size[1], x.get_shape()[-1], output_dim]
-
-    with tf.variable_scope(name):
-        w = tf.Variable(tf.truncated_normal(kernel_shape, 0, .02), dtype=tf.float32, name="w")
-        conv = tf.nn.conv2d(x, w, stride, "VALID")
-
-        b = tf.Variable(tf.zeros([output_dim]), name="b")
-        out = tf.nn.bias_add(conv, b)
-
-        out = tf.nn.relu(out)
-
-    return out, w, b
-
-def linear(x, output_size, name, activation_fn=tf.nn.relu):
-    shape = x.get_shape().as_list()
-
-    with tf.variable_scope(name):
-        w = tf.Variable(tf.random_normal([shape[1], output_size], stddev=.02), dtype=tf.float32, name='w')
-        b = tf.Variable(tf.zeros([output_size]), name='b')
-
-        out = tf.nn.bias_add(tf.matmul(x, w), b)
-
-        if activation_fn != None:
-            out =  activation_fn(out)
-
-    return out, w, b
 
 class DQN:
 
-    def __init__(self, height, width, num_actions, name, path=None):
+    def __init__(self, session, height, width, num_actions, name, path=None):
 
         if path is not None:
             if os.path.exists(path):
@@ -53,11 +25,8 @@ class DQN:
 
         self._create_network()
 
-        # Prepare session
-        init = tf.global_variables_initializer()
+        self.session = session
         self.saver = tf.train.Saver()
-        self.session = tf.Session()
-        self.session.run(init)
 
     def get_action_and_q(self, states):
         """
@@ -96,18 +65,13 @@ class DQN:
         """
         ops = []
         for var_self, var_other in zip(self.vars, other.vars):
-            print var_self.name
-            print var_other.name
             ops.append(var_self.assign(var_other.value()))
 
-        for op in ops:
-            self.session.run(op)
+        self.session.run(ops)
 
 
     def _create_network(self):
-        # tf.reset_default_graph()
 
-        # Input Layer
         with tf.variable_scope(self.name):
             self.state =  tf.placeholder(shape=[None, self.height, self.width, 1],dtype=tf.float32)
 
