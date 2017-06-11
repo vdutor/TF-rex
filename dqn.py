@@ -2,7 +2,31 @@ import numpy as np
 import tensorflow as tf
 import random
 import os
-from tools import conv2d, linear
+
+def conv2d(x, output_dim, kernel_shape, stride, name):
+    stride = [1, stride[0], stride[1], 1]
+
+    with tf.variable_scope(name):
+        w = tf.Variable(tf.truncated_normal(kernel_shape, 0, .02), dtype=tf.float32, name="w")
+        conv = tf.nn.conv2d(x, w, stride, "VALID")
+        b = tf.Variable(tf.zeros([output_dim]), name="b")
+        out = tf.nn.bias_add(conv, b)
+        out = tf.nn.relu(out)
+
+    return out, w, b
+
+def linear(x, output_size, name, activation_fn=tf.nn.relu):
+    shape = x.get_shape().as_list()
+
+    with tf.variable_scope(name):
+        w = tf.Variable(tf.random_normal([shape[1], output_size], stddev=.02), dtype=tf.float32, name='w')
+        b = tf.Variable(tf.zeros([output_size]), name='b')
+        out = tf.nn.bias_add(tf.matmul(x, w), b)
+
+        if activation_fn != None:
+            out =  activation_fn(out)
+
+    return out, w, b
 
 
 class DQN:
@@ -108,23 +132,3 @@ class DQN:
             loss = tf.reduce_mean(tf.square(self.Q_target - Q_tmp))
             optimizer = tf.train.AdamOptimizer()
             self.minimize = optimizer.minimize(loss)
-
-
-class Memory:
-
-    def __init__(self, size):
-        self.size = size
-        self.mem = np.ndarray((size,5), dtype=object)
-        self.iter = 0
-        self.current_size = 0
-
-    def add(self, state1, action, reward, state2, crashed):
-        self.mem[self.iter,:] = state1, action, reward, state2, crashed
-        self.iter = (self.iter + 1) % self.size
-        self.current_size = min(self.current_size + 1, self.size)
-
-    def sample(self, n):
-        n = min(self.current_size, n)
-        random_idx = random.sample(range(self.current_size), n)
-        sample = self.mem[random_idx]
-        return (np.stack(sample[:,i], axis=0) for i in range(5))
