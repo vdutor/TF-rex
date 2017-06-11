@@ -1,6 +1,8 @@
+from dqn import DQN
 import numpy as np
 import numpy.random as rnd
-from dqn import DQN
+import tensorflow as tf
+import random
 
 class Memory:
 
@@ -24,28 +26,28 @@ class Memory:
 
 class DDQNAgent:
 
-    def __init__(num_actions, width, height):
+    def __init__(self, num_actions, width, height):
         self.num_actions = num_actions
-        self.memory_size = 100000
+        self.memory_size = 10000
         self.explore_prob = 1.
         self.explore_min = 0.01
         self.explore_decay = 0.995
         self.batch_size = 32
         self.discount = .95
-        self.save_hz = 20 * 60   # save every 20 min
 
         tf.reset_default_graph()
         session = tf.Session()
 
-        self.memory = Memory(memory_size)
+        self.memory = Memory(self.memory_size)
         self.main_dqn = DQN(session, height, width, num_actions, "main", None)
         self.target_dqn = DQN(session, height, width, num_actions, "target", None)
 
+
         session.run(tf.global_variables_initializer())
 
-        target_dqn.tranfer_variables_from(main_dqn)
+        self.target_dqn.tranfer_variables_from(self.main_dqn)
 
-    def act(state):
+    def act(self, state):
         if rnd.rand() <= self.explore_prob:
             # explore
             return rnd.randint(self.num_actions)
@@ -59,6 +61,7 @@ class DDQNAgent:
         if self.memory.current_size < self.batch_size:
             return
 
+        print "...Training..."
         states, actions, rewards, states_next, crashes = self.memory.sample(self.batch_size)
         target = rewards
         # add Q value of next state to not terminal states (i.e. not crashed)
@@ -68,12 +71,12 @@ class DDQNAgent:
     def explore_less(self):
         self.explore_prob = max(self.explore_min, self.explore_prob * self.explore_decay)
 
-    def update_target_network():
+    def update_target_network(self):
         self.target_dqn.tranfer_variables_from(self.main_dqn)
 
-    def save():
+    def save(self):
         pass
 
-    def load(path):
+    def load(self, path):
         pass
 

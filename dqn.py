@@ -40,17 +40,19 @@ class DQN:
             os.makedirs(path)
 
         self.save_cnt = 0
+        self.train_cnt = 0
         self.path = path
         self.num_actions = num_actions
         self.height = height
         self.width = width
         self.name = name
         self.vars = []
+        self.session = session
 
         self._create_network()
+        self.merged = tf.summary.merge_all()
+        self.writer = tf.summary.FileWriter('.', self.session.graph)
 
-        self.session = session
-        self.saver = tf.train.Saver()
 
     def get_action_and_q(self, states):
         """
@@ -75,7 +77,9 @@ class DQN:
     def train(self, states, actions, targets):
         states = states.reshape(-1, self.height, self.width, 1)
         feed_dict = {self.state: states, self.actions: actions, self.Q_target: targets}
-        self.session.run(self.minimize, feed_dict)
+        summary,_ = self.session.run([self.merged, self.minimize], feed_dict)
+        self.writer.add_summary(summary, self.train_cnt)
+        self.train_cnt += 1
 
     def save(self):
         if self.path is not None:
@@ -130,5 +134,6 @@ class DQN:
 
             Q_tmp = tf.reduce_sum(tf.multiply(self.Qs, actions_onehot), axis=1)
             loss = tf.reduce_mean(tf.square(self.Q_target - Q_tmp))
+            tf.summary.scalar("mse", loss)
             optimizer = tf.train.AdamOptimizer()
             self.minimize = optimizer.minimize(loss)
