@@ -92,5 +92,5 @@ class GameAgent:
         self.server.send_message(self.game_client, "STATE");
 
         image, crashed = self.queue.get()
-        reward = -1. if crashed else 1.
+        reward = -10. if crashed else 1.
         return image, reward, crashed

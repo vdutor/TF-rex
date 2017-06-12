@@ -1,7 +1,6 @@
 import numpy as np
 import tensorflow as tf
 import random
-import os
 
 def conv2d(x, output_dim, kernel_shape, stride, name):
     stride = [1, stride[0], stride[1], 1]
@@ -31,17 +30,7 @@ def linear(x, output_size, name, activation_fn=tf.nn.relu):
 
 class DQN:
 
-    def __init__(self, session, height, width, num_actions, name, path=None):
-
-        if path is not None:
-            if os.path.exists(path):
-                print "PATH FOR STORING RESULTS ALREADY EXISTS!"
-                exit(1)
-            os.makedirs(path)
-
-        self.save_cnt = 0
-        self.train_cnt = 0
-        self.path = path
+    def __init__(self, session, height, width, num_actions, name, writer=None):
         self.num_actions = num_actions
         self.height = height
         self.width = width
@@ -49,9 +38,9 @@ class DQN:
         self.vars = []
         self.session = session
 
+        self.summary_ops = []
         self._create_network()
-        self.merged = tf.summary.merge_all()
-        self.writer = tf.summary.FileWriter('.', self.session.graph)
+        self.writer = writer
 
 
     def get_action_and_q(self, states):
@@ -74,17 +63,11 @@ class DQN:
         actions = self.session.run(self.a, {self.state: states})
         return actions[0] if num_states == 1 else actions
 
-    def train(self, states, actions, targets):
+    def train(self, states, actions, targets, cnt):
         states = states.reshape(-1, self.height, self.width, 1)
         feed_dict = {self.state: states, self.actions: actions, self.Q_target: targets}
-        summary,_ = self.session.run([self.merged, self.minimize], feed_dict)
-        self.writer.add_summary(summary, self.train_cnt)
-        self.train_cnt += 1
-
-    def save(self):
-        if self.path is not None:
-            self.saver.save(self.session, self.path + '/model', global_step = self.save_cnt)
-            self.save_cnt += 1
+        summary,_ = self.session.run([tf.summary.merge(self.summary_ops), self.minimize], feed_dict)
+        if self.writer: self.writer.add_summary(summary, global_step=cnt)
 
     def tranfer_variables_from(self, other):
         """
@@ -102,6 +85,7 @@ class DQN:
 
         with tf.variable_scope(self.name):
             self.state =  tf.placeholder(shape=[None, self.height, self.width, 1],dtype=tf.float32)
+            self.summary_ops.append(tf.summary.image("states", self.state, max_outputs=10))
 
             conv1, w1, b1 = conv2d(self.state, 32, [8, 8, 1, 32], [4, 4], "conv1")
             conv2, w2, b2 = conv2d(conv1, 64, [4, 4, 32, 64], [2, 2], "conv2")
@@ -126,6 +110,7 @@ class DQN:
             self.a = tf.argmax(self.Qs, 1)
             # Q value belonging to selected action
             self.Q = tf.reduce_max(self.Qs, 1)
+            tf.summary.scalar("Q", self.Q)
 
             # For training
             self.Q_target = tf.placeholder(shape=[None], dtype=tf.float32)
@@ -134,6 +119,6 @@ class DQN:
 
             Q_tmp = tf.reduce_sum(tf.multiply(self.Qs, actions_onehot), axis=1)
             loss = tf.reduce_mean(tf.square(self.Q_target - Q_tmp))
-            tf.summary.scalar("mse", loss)
+            self.summary_ops.append(tf.summary.scalar("loss", loss))
             optimizer = tf.train.AdamOptimizer()
             self.minimize = optimizer.minimize(loss)

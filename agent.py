@@ -1,8 +1,8 @@
 from dqn import DQN
 import numpy as np
 import numpy.random as rnd
-import tensorflow as tf
 import random
+import tensorflow as tf
 
 class Memory:
 
@@ -26,7 +26,9 @@ class Memory:
 
 class DDQNAgent:
 
-    def __init__(self, num_actions, width, height):
+    def __init__(self, session, num_actions, width, height, path, writer=None):
+        self.path_checkpoints = path
+        self.session = session
         self.num_actions = num_actions
         self.memory_size = 10000
         self.explore_prob = 1.
@@ -34,18 +36,14 @@ class DDQNAgent:
         self.explore_decay = 0.995
         self.batch_size = 32
         self.discount = .95
-
-        tf.reset_default_graph()
-        session = tf.Session()
-
         self.memory = Memory(self.memory_size)
-        self.main_dqn = DQN(session, height, width, num_actions, "main", None)
+        self.main_dqn = DQN(session, height, width, num_actions, "main", writer)
         self.target_dqn = DQN(session, height, width, num_actions, "target", None)
+        self.session.run(tf.global_variables_initializer())
 
+        self.update_target_network()
+        self.saver = tf.train.Saver()
 
-        session.run(tf.global_variables_initializer())
-
-        self.target_dqn.tranfer_variables_from(self.main_dqn)
 
     def act(self, state):
         if rnd.rand() <= self.explore_prob:
@@ -57,7 +55,7 @@ class DDQNAgent:
     def remember(self, state, action, reward, state_next, crashed):
         self.memory.remember(state, action, reward, state_next, crashed)
 
-    def replay(self):
+    def replay(self, cnt):
         if self.memory.current_size < self.batch_size:
             return
 
@@ -66,7 +64,7 @@ class DDQNAgent:
         target = rewards
         # add Q value of next state to not terminal states (i.e. not crashed)
         target[~crashes] += self.discount * self.target_dqn.get_action_and_q(states_next[~crashes])[1]
-        self.main_dqn.train(states, actions, target)
+        self.main_dqn.train(states, actions, target, cnt)
 
     def explore_less(self):
         self.explore_prob = max(self.explore_min, self.explore_prob * self.explore_decay)
@@ -74,9 +72,10 @@ class DDQNAgent:
     def update_target_network(self):
         self.target_dqn.tranfer_variables_from(self.main_dqn)
 
-    def save(self):
-        pass
+    def save(self, cnt):
+        self.saver.save(self.session, self.path_checkpoints + "tf-rex.ckpt", cnt)
+        print "Model saved"
 
-    def load(self, path):
-        pass
-
+    def load(self, checkpoint_name):
+        self.saver.restore(self.session, checkpoint_name)
+        print "Model resored"
