@@ -7,15 +7,15 @@ import tensorflow as tf
 import os
 
 ## RL Constants
-width = 100
+width = 150
 height = 50
 num_epoch = 1000
 len_epoch = 100000
 num_actions = len(GameAgent.actions)
 
 ## Application flags
-tf.app.flags.DEFINE_string("path", "./logs/exp1", "Path to store session checkpoints and tensorboard summaries")
-tf.app.flags.DEFINE_integer("checkpoint_hz", 5, "Creating a checkpoint every x epochs")
+tf.app.flags.DEFINE_string("path", "./logs/", "Path to store session checkpoints and tensorboard summaries")
+tf.app.flags.DEFINE_integer("checkpoint_hz", 200, "Creating a checkpoint every x epochs")
 tf.app.flags.DEFINE_boolean("training", True, "Train a new model")
 tf.app.flags.DEFINE_boolean("visualize", True, "Visualize")
 tf.app.flags.DEFINE_string("checkpoint_name", "./logs/checkpoints/tf-rex.ckpt-2", "Name of a checkpoint to load")
@@ -76,6 +76,8 @@ def main(_):
 
             if crashed:
                 break
+
+            state = state_next
 
             ep_steps += 1
             ep_reward += reward

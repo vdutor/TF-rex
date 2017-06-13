@@ -18,10 +18,7 @@ class Action:
 class GameAgent:
     """
     GameAgent class is responsible for passing the actions to the game.
-    For this it uses the pyuserinput module.
-    A action is performed in the game by emulating a keypress.
-    Besides this the GameAgent class is also responsible for retrieving the game status.
-    The logic for this is mostly implemented in the ..Handler.. class.
+    It is also responsible for retrieving the game status.
     """
     actions = {Action.UP:'UP', Action.FORWARD:'FORWARD'}
 
@@ -68,7 +65,7 @@ class GameAgent:
             time.sleep(1)
 
         self.server.send_message(self.game_client, "START");
-        time.sleep(2)
+        time.sleep(4)
         return self.get_state()
 
 

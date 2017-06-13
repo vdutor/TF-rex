@@ -894,15 +894,6 @@
 
             ws.send(JSON.stringify(state))
 
-            //$.ajax({
-                //url: "http://127.0.0.1:9090",
-                //type: "POST",
-                //data: state,
-                //dataType: "json",
-                //success: function(response){
-                    //console.log("success");
-                    //}
-                //});
             }
     };
 
@@ -2774,13 +2765,16 @@ ws.onmessage = function (evt)
         case 'STATE':
             runner.postState(ws);
             break;
-        case 'UP':
         case 'START':
-            simulateKey("keydown", 38);
+            simulateKey("keydown", 32); // space
+            setTimeout(function() {simulateKey("keyup", 32);} , 1000);
+            break;
+        case 'UP':
+            simulateKey("keydown", 38); // arrow up
             setTimeout(function() {simulateKey("keyup", 38);} , 400);
             break;
         case 'DOWN':
-            simulateKey("keydown", 40);
+            simulateKey("keydown", 40); // arrow down
             setTimeout(function() {simulateKey("keyup", 40);} , 400);
             break;
         default:

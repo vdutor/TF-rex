@@ -8,7 +8,7 @@ class InputProcessor:
         self.height = height
 
     def process(self, image):
-        roi_height, roi_width = image.shape[0], int(image.shape[1] * .6)
+        roi_height, roi_width = image.shape[0], int(image.shape[1] * .68)
         processed = np.zeros((roi_height, roi_width))
 
         roi = image[:,:roi_width,0]
@@ -20,5 +20,3 @@ class InputProcessor:
         processed = imresize(processed, (self.height, self.width, 1))
         processed = processed / 255.0
         return processed
-
-
