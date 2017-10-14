@@ -42,3 +42,10 @@ $ python main.py play --modeldir path_to_trained_model
 
 ### References
 [1] [Playing Atari with Deep Reinforcement Learning](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf)
+
+
+### TODO
+- look for good Pixel RL NNs
+- add Q values as summary histograms in tensorboard
+- try different rerward functions
+- add command line aegument support
