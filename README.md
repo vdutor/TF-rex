@@ -8,16 +8,23 @@ The RL algorithm is based on the Deep Q-Learning algorithm [1] and will be imple
  - tensorflow 1.3.0
  - optional: tensorboard
 
-We recommend creating a virtualenv before installing the packages.
-The dependencies can be easly installed using pip.
+
+### Setup
+
+For Debian, Ubuntu, and Ubuntu-based distros.
+
+Start by cloning the repositery
+```sh
+$ git clone https://github.com/vdutor/TF-rex
+```
+
+We recommend creating a virtualenv before installing the required packages. See virtualenv or virtualenv-wrapper on how to do so.
+The dependencies can be easly obtained using pip.
 ```sh
 $ pip install -r requirements.txt
 ```
 
-### Setup
-
-For Debian, Ubuntu, and Ubuntu-based distros:
-Install necessary packages to have a simple web server and configure the server to use the right webpages
+A simple webserver is needed to run the T-rex game
 ```sh
 $ sudo apt install apache2
 $ cd /var/www
@@ -26,7 +33,7 @@ $ sudo ln -s /path/to/project/TF-Rex/t-rex-runner html
 ```
 The game is now accessable on your localhost `127.0.0.1`.
 
-Next, just run the the python code
+Finally, just run the the python code
 ```sh
 $ python main.py --help
 $ python main.py learn
