@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 import random
+from functools import reduce
 
 def conv2d(x, output_dim, kernel_shape, stride, name):
     stride = [1, stride[0], stride[1], 1]

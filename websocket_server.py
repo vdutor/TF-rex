@@ -8,7 +8,7 @@ from hashlib import sha1
 import logging
 
 if sys.version_info[0] < 3 :
-	from SocketServer import ThreadingMixIn, TCPServer, StreamRequestHandler
+	from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
 else:
 	from socketserver import ThreadingMixIn, TCPServer, StreamRequestHandler
 
@@ -155,7 +155,7 @@ class WebSocketHandler(StreamRequestHandler):
 		# python3 gives ordinal of byte directly
 		bytes = self.rfile.read(num)
 		if sys.version_info[0] < 3:
-			return map(ord, bytes)
+			return list(map(ord, bytes))
 		else:
 			return bytes
 
@@ -211,7 +211,7 @@ class WebSocketHandler(StreamRequestHandler):
 			if not message:
 				logger.warning("Can\'t send message, message is not valid UTF-8")
 				return False
-		elif isinstance(message, str) or isinstance(message, unicode):
+		elif isinstance(message, str) or isinstance(message, str):
 			pass
 		else:
 			logger.warning('Can\'t send message, message has to be a string or bytes. Given type is %s' % type(message))

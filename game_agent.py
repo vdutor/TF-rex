@@ -29,18 +29,18 @@ class GameAgent:
         self.server = WebsocketServer(port, host=host)
         self.server.set_fn_new_client(self.new_client)
         self.server.set_fn_message_received(self.new_message)
-        print "\nGame can be connected (press F5 in Browser)"
+        print("\nGame can be connected (press F5 in Browser)")
         thread = threading.Thread(target = self.server.run_forever)
         thread.daemon = True
         thread.start()
 
     def new_client(self, client, server):
-        print "GameAgent: Game just connected"
+        print("GameAgent: Game just connected")
         self.game_client = client
         self.server.send_message(self.game_client, "Connection to Game Agent Established");
 
     def new_message(self, client, server, message):
-        if self.debug: print "GameAgent: Incoming data from game"
+        if self.debug: print("GameAgent: Incoming data from game")
         data = json.loads(message)
         image, crashed = data['world'], data['crashed']
 

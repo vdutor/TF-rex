@@ -19,7 +19,7 @@ class Memory:
 
     def sample(self, n):
         n = min(self.current_size, n)
-        random_idx = random.sample(range(self.current_size), n)
+        random_idx = random.sample(list(range(self.current_size)), n)
         sample = self.mem[random_idx]
         return (np.stack(sample[:,i], axis=0) for i in range(5))
 
@@ -59,7 +59,7 @@ class DDQNAgent:
         if self.memory.current_size < self.batch_size:
             return
 
-        print "...Training..."
+        print("...Training...")
         states, actions, rewards, states_next, crashes = self.memory.sample(self.batch_size)
         target = rewards
         # add Q value of next state to not terminal states (i.e. not crashed)
@@ -74,8 +74,8 @@ class DDQNAgent:
 
     def save(self, cnt):
         self.saver.save(self.session, self.path_checkpoints + "tf-rex.ckpt", cnt)
-        print "Model saved"
+        print("Model saved")
 
     def load(self, checkpoint_name):
         self.saver.restore(self.session, checkpoint_name)
-        print "Model resored"
+        print("Model resored")

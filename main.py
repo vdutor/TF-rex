@@ -24,7 +24,7 @@ FLAGS = tf.app.flags.FLAGS
 def check_path_existance(path):
     if not path: return
     if os.path.exists(path):
-        print "PATH FOR STORING RESULTS ALREADY EXISTS!"
+        print("PATH FOR STORING RESULTS ALREADY EXISTS!")
         exit(1)
     os.makedirs(path)
 
@@ -38,8 +38,8 @@ def setup_summary():
     return summary_ops, summary_placeholders
 
 def summarize(session, writer, cnt, summary_ops, summary_placeholders, values):
-    ops = [summary_ops[tag] for tag in values.keys()]
-    feed_dict = {summary_placeholders[tag]: values[tag] for tag in values.keys()}
+    ops = [summary_ops[tag] for tag in list(values.keys())]
+    feed_dict = {summary_placeholders[tag]: values[tag] for tag in list(values.keys())}
     summary_lists = session.run(ops, feed_dict)
     for summary in summary_lists:
         writer.add_summary(summary, cnt)
@@ -60,7 +60,7 @@ def main(_):
     network.update_target_network()
 
     for epoch in range(num_epoch):
-        print "\nEpoch: ", epoch
+        print("\nEpoch: ", epoch)
 
         state,_,crashed = game_agent.start_game()
         state = processor.process(state)
@@ -70,7 +70,7 @@ def main(_):
 
             action = network.act(state)
             state_next, reward, crashed = game_agent.do_action(action)
-            print "action: {}\t crashed: {}".format(GameAgent.actions[action], crashed)
+            print("action: {}\t crashed: {}".format(GameAgent.actions[action], crashed))
             state_next = processor.process(state_next)
             network.remember(state, action, reward, state_next, crashed)
 
