@@ -18,9 +18,9 @@ class Action:
 class GameAgent:
     """
     GameAgent class is responsible for passing the actions to the game.
-    It is also responsible for retrieving the game status.
+    It is also responsible for retrieving the game status and the reward.
     """
-    actions = {Action.UP:'UP', Action.FORWARD:'FORWARD'}
+    actions = {Action.UP:'UP', Action.FORWARD:'FORTH'}
 
     def __init__(self, host, port, debug=False):
         self.debug = debug
@@ -66,7 +66,7 @@ class GameAgent:
 
         self.server.send_message(self.game_client, "START");
         time.sleep(4)
-        return self.get_state()
+        return self.get_state(Action.FORWARD)
 
 
     def do_action(self, action):
@@ -79,15 +79,26 @@ class GameAgent:
                         whether the TRex crashed or not.
         """
         if action != Action.FORWARD:
-            # noting needs to send when the action is going forward
+            # noting needs to be send when the action is going forward
             self.server.send_message(self.game_client, self.actions[action]);
 
         time.sleep(.25)
-        return self.get_state()
+        return self.get_state(action)
 
-    def get_state(self):
+    def get_state(self, action):
         self.server.send_message(self.game_client, "STATE");
 
         image, crashed = self.queue.get()
-        reward = -10. if crashed else 1.
+
+        if crashed:
+            reward = 100.
+        elif action == Action.UP:
+            reward = -20.
+        elif action == Action.FORWARD:
+            reward = -1.
+        else:
+            print("We shouldn't end up here. get_state function")
+            reward = 0.
+
+        # reward = 100. if crashed else -1.
         return image, reward, crashed

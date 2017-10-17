@@ -7,26 +7,32 @@ import tensorflow as tf
 import os
 
 ## RL Constants
-width = 150
-height = 50
+width = 80
+height = 80
 num_epoch = 1000
 len_epoch = 100000
 num_actions = len(GameAgent.actions)
 
 ## Application flags
 tf.app.flags.DEFINE_string("path", "./logs/", "Path to store session checkpoints and tensorboard summaries")
-tf.app.flags.DEFINE_integer("checkpoint_hz", 200, "Creating a checkpoint every x epochs")
-tf.app.flags.DEFINE_boolean("training", True, "Train a new model")
+tf.app.flags.DEFINE_integer("checkpoint_hz", 5, "Creating a checkpoint every x epochs")
+tf.app.flags.DEFINE_boolean("training", False, "Train a new model")
 tf.app.flags.DEFINE_boolean("visualize", True, "Visualize")
-tf.app.flags.DEFINE_string("checkpoint_name", "./logs/checkpoints/tf-rex.ckpt-2", "Name of a checkpoint to load")
+tf.app.flags.DEFINE_string("checkpoint_name", "./logs/rex.ckpt", "path of a checkpoint to load")
 FLAGS = tf.app.flags.FLAGS
 
-def check_path_existance(path):
-    if not path: return
-    if os.path.exists(path):
+# TODO make logic easier to read
+def check_path_existance(path, training):
+
+    if training and os.path.exists(path):
         print("PATH FOR STORING RESULTS ALREADY EXISTS!")
         exit(1)
-    os.makedirs(path)
+    elif not training and not os.path.exists(path):
+        print("TRAINED MODEL NOT FOUND")
+        exit(1)
+    elif training and not os.path.exists(path):
+        os.makedirs(path)
+
 
 def setup_summary():
     with tf.variable_scope("statistics"):
@@ -45,7 +51,7 @@ def summarize(session, writer, cnt, summary_ops, summary_placeholders, values):
         writer.add_summary(summary, cnt)
 
 def main(_):
-    check_path_existance(FLAGS.path)
+    check_path_existance(FLAGS.path , FLAGS.training)
     tf.reset_default_graph()
     session = tf.Session()
     writer = tf.summary.FileWriter(FLAGS.path, session.graph) if FLAGS.visualize else None
@@ -68,19 +74,19 @@ def main(_):
 
         while ep_steps < len_epoch:
 
-            action = network.act(state)
+            action, explored = network.act(state)
             state_next, reward, crashed = game_agent.do_action(action)
-            print("action: {}\t crashed: {}".format(GameAgent.actions[action], crashed))
+            print("action: {}\t crashed: {}".format(GameAgent.actions[action] + ["", "*"][explored], crashed))
             state_next = processor.process(state_next)
             network.remember(state, action, reward, state_next, crashed)
+
+            ep_steps += 1
+            ep_reward += reward
 
             if crashed:
                 break
 
             state = state_next
-
-            ep_steps += 1
-            ep_reward += reward
 
         network.replay(epoch)
         network.explore_less()
