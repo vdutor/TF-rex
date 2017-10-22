@@ -10,22 +10,21 @@ import os
 width = 80
 height = 80
 num_epoch = 1000
-len_epoch = 100000
+len_epoch = 1E8
 num_actions = len(GameAgent.actions)
 
 ## Application flags
 tf.app.flags.DEFINE_string("path", "./logs/", "Path to store session checkpoints and tensorboard summaries")
-tf.app.flags.DEFINE_integer("checkpoint_hz", 5, "Creating a checkpoint every x epochs")
+tf.app.flags.DEFINE_integer("checkpoint_hz", 100, "Creating a checkpoint every x epochs")
 tf.app.flags.DEFINE_boolean("training", False, "Train a new model")
 tf.app.flags.DEFINE_boolean("visualize", True, "Visualize")
 tf.app.flags.DEFINE_string("checkpoint_name", "./logs/rex.ckpt", "path of a checkpoint to load")
 FLAGS = tf.app.flags.FLAGS
 
-# TODO make logic easier to read
 def check_path_existance(path, training):
 
     if training and os.path.exists(path):
-        print("PATH FOR STORING RESULTS ALREADY EXISTS!")
+        print("PATH FOR STORING RESULTS ALREADY EXISTS - Results would be overwritten.")
         exit(1)
     elif not training and not os.path.exists(path):
         print("TRAINED MODEL NOT FOUND")
@@ -61,8 +60,20 @@ def main(_):
     network = DDQNAgent(session, num_actions, width, height, FLAGS.path, writer)
     processor = InputProcessor(width, height)
 
+    # Playing, assuming we can load a pretrained network
     if not FLAGS.training:
         network.load(FLAGS.checkpoint_name)
+        epoch = 0
+
+        while True:
+            epoch += 1
+            ep_steps, ep_reward = network.play(game_agent, processor)
+            stats = {"ep_steps": ep_steps, "ep_reward": ep_reward}
+            summarize(session, writer, epoch, summary_ops, summary_placeholders, stats)
+
+        exit(0)
+
+    # Training...
     network.update_target_network()
 
     for epoch in range(num_epoch):
