@@ -97,7 +97,7 @@ class GameAgent:
         elif action == Action.FORWARD:
             reward = -1.
         else:
-            print("We shouldn't end up here. get_state function")
+            print("We shouldn't end up here. Check the get_state function. ")
             reward = 0.
 
         # reward = 100. if crashed else -1.

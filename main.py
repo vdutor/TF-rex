@@ -14,11 +14,11 @@ len_epoch = 1E8
 num_actions = len(GameAgent.actions)
 
 ## Application flags
-tf.app.flags.DEFINE_string("path", "./logs/", "Path to store session checkpoints and tensorboard summaries")
+tf.app.flags.DEFINE_string("path", "./logs2/", "Path to store the model and tensorboard logs or restore the model.")
 tf.app.flags.DEFINE_integer("checkpoint_hz", 100, "Creating a checkpoint every x epochs")
-tf.app.flags.DEFINE_boolean("training", False, "Train a new model")
+tf.app.flags.DEFINE_boolean("training", True, "Train a new model")
 tf.app.flags.DEFINE_boolean("visualize", True, "Visualize")
-tf.app.flags.DEFINE_string("checkpoint_name", "./logs/rex.ckpt", "path of a checkpoint to load")
+tf.app.flags.DEFINE_string("checkpoint_name", "./logs2/rex.ckpt", "path of a checkpoint to load")
 FLAGS = tf.app.flags.FLAGS
 
 def check_path_existance(path, training):
@@ -63,13 +63,9 @@ def main(_):
     # Playing, assuming we can load a pretrained network
     if not FLAGS.training:
         network.load(FLAGS.checkpoint_name)
-        epoch = 0
 
         while True:
-            epoch += 1
             ep_steps, ep_reward = network.play(game_agent, processor)
-            stats = {"ep_steps": ep_steps, "ep_reward": ep_reward}
-            summarize(session, writer, epoch, summary_ops, summary_placeholders, stats)
 
         exit(0)
 
@@ -79,17 +75,19 @@ def main(_):
     for epoch in range(num_epoch):
         print("\nEpoch: ", epoch)
 
-        state,_,crashed = game_agent.start_game()
-        state = processor.process(state)
+        frame, _ , crashed = game_agent.start_game()
+        frame = processor.process(frame)
+        state = np.array([frame, frame, frame, frame])
         ep_steps, ep_reward = 0, 0
 
         while ep_steps < len_epoch:
 
             action, explored = network.act(state)
-            state_next, reward, crashed = game_agent.do_action(action)
+            next_frame, reward, crashed = game_agent.do_action(action)
             print("action: {}\t crashed: {}".format(GameAgent.actions[action] + ["", "*"][explored], crashed))
-            state_next = processor.process(state_next)
-            network.remember(state, action, reward, state_next, crashed)
+            next_frame = processor.process(next_frame)
+            next_state = np.array([*state[-3:], next_frame])
+            network.remember(state, action, reward, next_state, crashed)
 
             ep_steps += 1
             ep_reward += reward
@@ -97,7 +95,7 @@ def main(_):
             if crashed:
                 break
 
-            state = state_next
+            state = next_state
 
         network.replay(epoch)
         network.explore_less()

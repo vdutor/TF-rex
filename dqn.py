@@ -3,17 +3,25 @@ import tensorflow as tf
 import random
 from functools import reduce
 
+
+def max_pool_2x2(x, kernel_shape, name):
+    ksize = [1, *kernel_shape, 1]
+    strides = [1, *kernel_shape, 1]
+    return tf.nn.max_pool(x, ksize, strides, padding='SAME', name=name)
+
+
 def conv2d(x, output_dim, kernel_shape, stride, name):
     stride = [1, stride[0], stride[1], 1]
 
     with tf.variable_scope(name):
-        w = tf.Variable(tf.truncated_normal(kernel_shape, 0, .02), dtype=tf.float32, name="w")
+        w = tf.Variable(tf.truncated_normal(kernel_shape, mean=0, stddev=.1), dtype=tf.float32, name="w")
         conv = tf.nn.conv2d(x, w, stride, "VALID")
-        b = tf.Variable(tf.zeros([output_dim]), name="b")
+        b = tf.Variable(tf.constant(0.1, shape=[output_dim]), name="b")
         out = tf.nn.bias_add(conv, b)
         out = tf.nn.relu(out)
 
     return out, w, b
+
 
 def linear(x, output_size, name, activation_fn=tf.nn.relu):
     shape = x.get_shape().as_list()
@@ -50,7 +58,7 @@ class DQN:
             array[0]: actions: is a array of length len(state) with the action with the highest score
             array[1]: q value: is a array of length len(state) with the Q-value belonging to the action
         """
-        states = states.reshape(-1, self.height, self.width, 1)
+        states = states.reshape(-1, 4, self.height, self.width)
         return self.session.run([self.a, self.Q], {self.state: states})
 
     def get_action(self, states):
@@ -59,13 +67,13 @@ class DQN:
             - if states contains only a single state then we return the optimal action as an integer,
             - if states contains an array of states then we return the optimal action for each state of the array
         """
-        states = states.reshape(-1, self.height, self.width, 1)
+        states = states.reshape(-1, 4, self.height, self.width)
         num_states = states.shape[0]
         actions = self.session.run(self.a, {self.state: states})
         return actions[0] if num_states == 1 else actions
 
     def train(self, states, actions, targets, cnt):
-        states = states.reshape(-1, self.height, self.width, 1)
+        states = states.reshape(-1, 4, self.height, self.width)
         feed_dict = {self.state: states, self.actions: actions, self.Q_target: targets}
         summary,_ = self.session.run([tf.summary.merge(self.summary_ops), self.minimize], feed_dict)
         if self.writer: self.writer.add_summary(summary, global_step=cnt)
@@ -85,11 +93,15 @@ class DQN:
     def _create_network(self):
 
         with tf.variable_scope(self.name):
-            self.state =  tf.placeholder(shape=[None, self.height, self.width, 1],dtype=tf.float32)
-            self.summary_ops.append(tf.summary.image("states", self.state, max_outputs=10))
+            # batchsize x memory x height x width
+            self.state =  tf.placeholder(shape=[None, 4, self.height, self.width],dtype=tf.float32)
+            # batchsize x height x width x memory
+            self.state_perm = tf.transpose(self.state, perm=[0, 2, 3, 1])
+            self.summary_ops.append(tf.summary.image("states", self.state[:, 0, :, :][..., tf.newaxis], max_outputs=10))
 
-            conv1, w1, b1 = conv2d(self.state, 32, [8, 8, 1, 32], [4, 4], "conv1")
-            conv2, w2, b2 = conv2d(conv1, 64, [4, 4, 32, 64], [2, 2], "conv2")
+            conv1, w1, b1 = conv2d(self.state_perm, 32, [8, 8, 4, 32], [4, 4], "conv1")
+            max_pool = max_pool_2x2(conv1, [2, 2], "maxpool")
+            conv2, w2, b2 = conv2d(max_pool, 64, [4, 4, 32, 64], [2, 2], "conv2")
             conv3, w3, b3 = conv2d(conv2, 64, [3, 3, 64, 64], [1, 1], "conv3")
             self.vars += [w1, b1, w2, b2, w3, b3]
 
