@@ -91,13 +91,10 @@ class GameAgent:
         image, crashed = self.queue.get()
 
         if crashed:
-            reward = 100.
+            reward = -100.
         elif action == Action.UP:
-            reward = -20.
-        elif action == Action.FORWARD:
-            reward = -1.
+            reward = -5.
         else:
-            print("We shouldn't end up here. Check the get_state function. ")
             reward = 0.
 
         # reward = 100. if crashed else -1.

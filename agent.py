@@ -33,7 +33,7 @@ class DDQNAgent:
         self.memory_size = 10000
         self.explore_prob = 1.
         self.explore_min = 0.01
-        self.explore_decay = 0.995
+        self.explore_decay = 0.9995
         self.batch_size = 32
         self.discount = .95
         self.memory = Memory(self.memory_size)
@@ -61,6 +61,7 @@ class DDQNAgent:
 
             ep_steps += 1
             ep_reward += reward
+            state = next_state
 
         print("---------------------")
         print("CRASH... reward: {}".format(ep_reward))
