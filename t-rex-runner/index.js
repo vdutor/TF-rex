@@ -2769,6 +2769,9 @@ ws.onmessage = function (evt)
             simulateKey("keydown", 32); // space
             setTimeout(function() {simulateKey("keyup", 32);} , 1000);
             break;
+        case 'REFRESH':
+            location.reload(true);
+            break;
         case 'UP':
             simulateKey("keydown", 38); // arrow up
             setTimeout(function() {simulateKey("keyup", 38);} , 400);

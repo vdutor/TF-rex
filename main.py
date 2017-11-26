@@ -15,6 +15,7 @@ num_actions = len(GameAgent.actions)
 ## Application flags
 tf.app.flags.DEFINE_string("logdir", "./logs/", "Path to store the model and tensorboard logs or restore the model")
 tf.app.flags.DEFINE_integer("checkpoint_hz", 100, "Creating a checkpoint every x epochs")
+tf.app.flags.DEFINE_integer("refresh_hz", 100, "Reloading the browser every x epochs")
 tf.app.flags.DEFINE_boolean("training", True, "Train a new model")
 tf.app.flags.DEFINE_boolean("visualize", True, "Visualize")
 FLAGS = tf.app.flags.FLAGS
@@ -116,6 +117,9 @@ def main(_):
 
         if epoch % FLAGS.checkpoint_hz == 0:
             network.save(epoch)
+
+        if epoch % FLAGS.refresh_hz == 0:
+            game_agent.refresh_game()
 
 if __name__ == '__main__':
     tf.app.run()

@@ -11,16 +11,15 @@ import re
 
 class Action:
     UP = 0
-    # DOWN = 1
-    FORWARD = 1
-
+    DOWN = 1
+    FORWARD = 2
 
 class GameAgent:
     """
     GameAgent class is responsible for passing the actions to the game.
     It is also responsible for retrieving the game status and the reward.
     """
-    actions = {Action.UP:'UP', Action.FORWARD:'FORTH'}
+    actions = {Action.UP:'UP', Action.FORWARD:'FORTH', Action.DOWN:'DOWN'}
 
     def __init__(self, host, port, debug=False):
         self.debug = debug
@@ -35,7 +34,7 @@ class GameAgent:
         thread.start()
 
     def new_client(self, client, server):
-        print("GameAgent: Game just connected")
+        if self.debug: print("GameAgent: Game just connected")
         self.game_client = client
         self.server.send_message(self.game_client, "Connection to Game Agent Established");
 
@@ -68,6 +67,11 @@ class GameAgent:
         time.sleep(4)
         return self.get_state(Action.FORWARD)
 
+    def refresh_game(self):
+        time.sleep(0.5)
+        print("...refreshing game...")
+        self.server.send_message(self.game_client, "REFRESH");
+        time.sleep(1)
 
     def do_action(self, action):
         """
@@ -92,10 +96,10 @@ class GameAgent:
 
         if crashed:
             reward = -100.
-        elif action == Action.UP:
-            reward = -5.
         else:
-            reward = 0.
+            if action == Action.UP or action == Action.DOWN:
+                reward = -5.
+            else:
+                reward = 1.
 
-        # reward = 100. if crashed else -1.
         return image, reward, crashed
