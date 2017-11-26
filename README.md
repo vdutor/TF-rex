@@ -31,21 +31,24 @@ $ cd /var/www
 $ sudo rm -r html
 $ sudo ln -s /path/to/project/TF-Rex/t-rex-runner html
 ```
-The game is now accessable on your localhost `127.0.0.1`.
+The game is now accessable on your localhost `127.0.0.1`. We recommend using the Google Chrome or the Mozilla Firefox browsers.   
 
 Finally, just run the the python code
 ```sh
 $ python main.py --help
-$ python main.py learn
-$ python main.py play --modeldir path_to_trained_model
+$ python main.py --logdir logs                        # will train a model
+$ python main.py --notraining --logdir trained-model  # will play with existing model, stored in `trained-model` directory.
 ```
+While training, a different terminal can be opended to launch tensorboards
+```sh
+$ tensorboard --logdir logs
+```
+The tensorboards will be visible on `http://127.0.0.1:6006/`.
 
 ### References
 [1] [Playing Atari with Deep Reinforcement Learning](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf)
 
 
 ### TODO
-- look for good Pixel RL NNs
 - add Q values as summary histograms in tensorboard
-- try different rerward functions
-- add command line aegument support
+- try different reward functions
