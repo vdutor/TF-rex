@@ -31,13 +31,13 @@ $ cd /var/www
 $ sudo rm -r html
 $ sudo ln -s /path/to/project/TF-Rex/t-rex-runner html
 ```
-The game is now accessable on your localhost `127.0.0.1`. We recommend using the Google Chrome or the Mozilla Firefox browsers.   
+The game is now accessable on your localhost `127.0.0.1`. We recommend using the Google Chrome or the Mozilla Firefox browsers.
 
 Finally, just run the the python code
 ```sh
 $ python main.py --help
-$ python main.py --logdir logs                        # will train a model
-$ python main.py --notraining --logdir trained-model  # will play with existing model, stored in `trained-model` directory.
+$ python main.py --logdir logs                                    # will train a model
+$ python main.py --notraining --logdir ./models/model-3-actions   # will play with pretrained model, stored in the specified directory.
 ```
 While training, a different terminal can be opended to launch tensorboards
 ```sh
