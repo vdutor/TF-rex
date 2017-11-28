@@ -1,0 +1,7 @@
+3 actions: DOWN, FORTH, UP
+memory_size = 10000
+explore_prob = 1.
+explore_min = 0.01
+explore_decay = 0.99
+batch_size = 32
+discount = .95
