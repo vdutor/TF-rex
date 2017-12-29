@@ -2,7 +2,9 @@
 In this project we play Google's T-rex game using Reinforcement Learning.
 The RL algorithm is based on the Deep Q-Learning algorithm [1] and is implemented in TensorFlow.
 
-### Dependencies
+see the accompanying (blogpost)[https://vdutor.github.io/blog/2018/01/05/TF-rex.html]
+
+## Dependencies
  - __Python 3.5 or higher__
  - Pillow 4.3.0
  - scipy 0.19.1
@@ -10,7 +12,7 @@ The RL algorithm is based on the Deep Q-Learning algorithm [1] and is implemente
  - optional: tensorflow tensorboard
 
 
-### Setup
+## Installation
 
 Tested on MacOs, Debian, Ubuntu, and Ubuntu-based distros.
 
@@ -26,7 +28,7 @@ The dependencies can be easly installed using pip.
 $ optional: open the virtualenv
 $ pip install -r requirements.txt
 ```
-#### Webserver for running the javascript T-rex game
+### Webserver for running the javascript T-rex game
 
 A simple webserver is required to run the T-rex game. We propose two different ways to set this up.
 The approaches are tested for the Google Chrome and the Mozilla Firefox browser.
@@ -52,9 +54,9 @@ $ sudo ln -s /path/to/project/TF-Rex/t-rex-runner html
 ```
 The game is now accessable on your localhost `127.0.0.1`. 
 
-#### Training a new model or playing with a pretrained one
+## Getting started
 
-First, all the command line arguments can be retrieved with
+First, all the commandline arguments can be retrieved with
 ```sh
 $ python main.py --help
 ```
@@ -78,9 +80,10 @@ $ tensorboard --logdir logs
 ```
 The tensorboards will be visible on `http://127.0.0.1:6006/`.
 
-### References
+## References
 [1] [Playing Atari with Deep Reinforcement Learning](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf)
 
 ### TODO
 - add Q values as summary histograms in tensorboard
 - try without convolutional layers
+- write blogpost
