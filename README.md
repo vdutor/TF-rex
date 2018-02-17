@@ -2,7 +2,7 @@
 In this project we play Google's T-rex game using Reinforcement Learning.
 The RL algorithm is based on the Deep Q-Learning algorithm [1] and is implemented in TensorFlow.
 
-see the accompanying (blogpost)[https://vdutor.github.io/blog/2018/01/05/TF-rex.html]
+see the accompanying [blogpost](https://vdutor.github.io/blog/2018/01/05/TF-rex.html)
 
 ## Dependencies
  - __Python 3.5 or higher__
