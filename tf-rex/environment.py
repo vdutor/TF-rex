@@ -1,22 +1,20 @@
 from PIL import Image
 from io import BytesIO
 from websocket_server import WebsocketServer
-import base64
-import json
+import base64, json, re, time, threading
 import multiprocessing
 import numpy as np
-import threading
-import time
-import re
+
 
 class Action:
     UP = 0
     DOWN = 1
     FORWARD = 2
 
-class GameAgent:
+
+class Environment:
     """
-    GameAgent class is responsible for passing the actions to the game.
+    Environment class is responsible for passing the actions to the game.
     It is also responsible for retrieving the game status and the reward.
     """
     actions = {Action.UP:'UP', Action.FORWARD:'FORTH', Action.DOWN:'DOWN'}

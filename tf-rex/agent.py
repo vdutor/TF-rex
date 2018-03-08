@@ -48,20 +48,6 @@ class DDQNAgent:
         self.explore_prob = 0
         ep_steps, ep_reward = 0, 0
 
-        frame,_,crashed = game.start_game()
-        frame = processor.process(frame)
-        state = np.array([frame, frame, frame, frame])
-
-        while not crashed:
-            action,_  = self.act(state)
-            next_frame, reward, crashed = game.do_action(action)
-            print("action: {}".format(game.actions[action]))
-            next_frame = processor.process(next_frame)
-            next_state = np.array([*state[-3:], next_frame])
-
-            ep_steps += 1
-            ep_reward += reward
-            state = next_state
 
         print("---------------------")
         print("CRASH... reward: {}".format(ep_reward))
