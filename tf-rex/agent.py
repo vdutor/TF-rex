@@ -77,9 +77,9 @@ class DDQNAgent:
         self.target_dqn.tranfer_variables_from(self.main_dqn)
 
     def save(self, cnt):
-        save_path = self.saver.save(self.session, self.path_checkpoints + "rex.ckpt")
+        save_path = self.saver.save(self.session, self.path_checkpoints + "rex.ckpt", global_step=cnt)
         print("Model saved in file: %s" % save_path)
 
     def load(self, checkpoint_name):
         self.saver.restore(self.session, checkpoint_name)
-        print("Model restored")
+        print("Model restored:", checkpoint_name)
