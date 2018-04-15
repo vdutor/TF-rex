@@ -10,13 +10,15 @@ import os
 ## Constants
 width = 80
 height = 80
-len_epoch = 1E8
+len_epoch = int(1E8)
 num_actions = len(Environment.actions)
 
 ## Application flags
 tf.app.flags.DEFINE_string("logdir", "./logs/", "Path to store the model and tensorboard logs or restore the model")
-tf.app.flags.DEFINE_integer("checkpoint_hz", 100, "Creating a checkpoint every x epochs")
+tf.app.flags.DEFINE_string("checkpoint_nr", None, "Checkpoint number of the model to restore")
+tf.app.flags.DEFINE_integer("checkpoint_hz", 200, "Creating a checkpoint every x epochs")
 tf.app.flags.DEFINE_integer("refresh_hz", 100, "Reloading the browser every x epochs")
+tf.app.flags.DEFINE_integer("update_target_network_hz", 20, "Reloading the browser every x epochs")
 tf.app.flags.DEFINE_boolean("training", True, "Train a new model")
 tf.app.flags.DEFINE_boolean("visualize", True, "Visualize")
 FLAGS = tf.app.flags.FLAGS
@@ -57,21 +59,28 @@ def summarize(session, writer, summary_ops, summary_placeholders, cnt, values):
 def play(agent, env, preprocessor):
     # load pretrained model,
     # will fail if the given path doesn't hold a valid model
-    agent.load(FLAGS.logdir + "rex.ckpt")
+    name = FLAGS.logdir + "rex.ckpt"
+    if FLAGS.checkpoint_nr is not None:
+        name = name + "-" + str(FLAGS.checkpoint_nr)
+
+    agent.load(name)
+    agent.explore_prob = 0.0
 
     while True:
-        frame,_,crashed = env.start_game()
+        frame, _, crashed = env.start_game()
         frame = preprocessor.process(frame)
         state = preprocessor.get_initial_state(frame)
 
         while not crashed:
-            action,_  = agent.act(state)
+            action, _  = agent.act(state)
             next_frame, reward, crashed = env.do_action(action)
             print("action: {}".format(env.actions[action]))
             next_frame = preprocessor.process(next_frame)
             next_state = preprocessor.get_updated_state(next_frame)
 
             state = next_state
+
+        print("Crash")
 
 def train(agent, env, preprocessor, summarize_function):
     agent.update_target_network()
@@ -86,12 +95,13 @@ def train(agent, env, preprocessor, summarize_function):
         state = preprocessor.get_initial_state(frame)
         ep_steps, ep_reward = 0, 0
 
-        while ep_steps < len_epoch:
+        while not crashed:
 
             action, explored = agent.act(state)
             next_frame, reward, crashed = env.do_action(action)
             # A '*' is appended to the action if it was randomly chosen (i.e. not produced by the network)
-            print("action: {}\t crashed: {}".format(Environment.actions[action] + ["", "*"][explored], crashed))
+            action_str = Environment.actions[action] + ["", "*"][explored]
+            print("action: {}\t crashed: {}".format(action_str, crashed))
             next_frame = preprocessor.process(next_frame)
             next_state = preprocessor.get_updated_state(next_frame)
             agent.remember(state, action, reward, next_state, crashed)
@@ -99,14 +109,13 @@ def train(agent, env, preprocessor, summarize_function):
             ep_steps += 1
             ep_reward += reward
 
-            if crashed:
-                break
-
             state = next_state
 
         agent.replay(epoch)
         agent.explore_less()
-        agent.update_target_network()
+
+        if epoch % FLAGS.update_target_network_hz == 0:
+            agent.update_target_network()
 
         stats = {"exploration": agent.explore_prob, "ep_steps": ep_steps, "ep_reward": ep_reward}
         summarize_function(epoch, stats)

@@ -117,7 +117,7 @@ class DQN:
             self.vars += [w4, b4, w5, b5, w6, b6, w7, b7]
 
             # Average Dueling
-            self.Qs = value + (advantage - tf.reduce_mean(advantage, axis=1, keep_dims=True))
+            self.Qs = value + (advantage - tf.reduce_mean(advantage, axis=1, keepdims=True))
 
             # action with highest Q values
             self.a = tf.argmax(self.Qs, 1)

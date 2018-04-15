@@ -84,7 +84,7 @@ class Environment:
             # noting needs to be send when the action is going forward
             self.server.send_message(self.game_client, self.actions[action]);
 
-        time.sleep(.1)
+        time.sleep(.05)
         return self.get_state(action)
 
     def get_state(self, action):
@@ -95,8 +95,10 @@ class Environment:
         if crashed:
             reward = -100.
         else:
-            if action == Action.UP or action == Action.DOWN:
+            if action == Action.UP:
                 reward = -5.
+            elif action == Action.DOWN:
+                reward = -3.
             else:
                 reward = 1.
 
