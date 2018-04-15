@@ -13,10 +13,11 @@ height = 80
 len_epoch = 1E8
 num_actions = len(Environment.actions)
 
+REFRESH_RATE = 100
+
 ## Application flags
 tf.app.flags.DEFINE_string("logdir", "./logs/", "Path to store the model and tensorboard logs or restore the model")
 tf.app.flags.DEFINE_integer("checkpoint_hz", 100, "Creating a checkpoint every x epochs")
-tf.app.flags.DEFINE_integer("refresh_hz", 100, "Reloading the browser every x epochs")
 tf.app.flags.DEFINE_boolean("training", True, "Train a new model")
 tf.app.flags.DEFINE_boolean("visualize", True, "Visualize")
 FLAGS = tf.app.flags.FLAGS
@@ -141,8 +142,8 @@ def main(_):
     preprocessor = Preprocessor(width, height)
 
     if FLAGS.training:
-        summarize_partial = partial(summarize, session, writer, summary_ops, summary_placeholders)
-        train(agent, env, preprocessor, summarize_partial)
+        summarize_func = partial(summarize, session, writer, summary_ops, summary_placeholders)
+        train(agent, env, preprocessor, summarize_func)
     else:
         play(agent, env, preprocessor)
 

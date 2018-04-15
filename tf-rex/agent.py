@@ -44,18 +44,6 @@ class DDQNAgent:
         self.update_target_network()
         self.saver = tf.train.Saver()
 
-    def play(self, game, processor):
-        self.explore_prob = 0
-        ep_steps, ep_reward = 0, 0
-
-
-        print("---------------------")
-        print("CRASH... reward: {}".format(ep_reward))
-        print("---------------------\n")
-        return ep_steps, ep_reward
-
-
-
     def act(self, state):
         """
         :return: an action and a boolean.
