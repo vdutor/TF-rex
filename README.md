@@ -8,7 +8,7 @@ Check out the accompanying [blogpost](https://vdutor.github.io/blog/2018/05/07/T
  - __Python 3.5 or higher__
  - Pillow 4.3.0
  - scipy 0.19.1
- - tensorflow 1.4.0 or higher
+ - tensorflow 1.7.0 or higher
  - optional: tensorflow tensorboard
 
 
@@ -38,9 +38,10 @@ The easiest way to achieve this is by using python's Simple HTTP Server module.
 Open a new terminal and navigate to `TF-Rex/game`, then run the following command
 ```sh
 $ cd /path/to/project/TF-Rex/game
-$ python2 -m SimpleHTTPServer 8000 
+$ python2 -m SimpleHTTPServer 8000
 ```
 The game is now accessable on your localhost `127.0.0.1:8000`.
+This approach was tested for Chrome and Mozilla Firefox.
 
 ### Tf-Rex
 
