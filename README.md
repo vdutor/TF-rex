@@ -20,7 +20,7 @@ CHECK OUT THE ACCOMPAGNYING [BLOGPOST](https://vdutor.github.io/blog/2018/05/07/
 
 Tested on MacOs, Debian, Ubuntu, and Ubuntu-based distros.
 
-Start by cloning the repositery
+Start by cloning the repository
 ```sh
 $ git clone https://github.com/vdutor/TF-rex
 ```
