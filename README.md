@@ -51,15 +51,16 @@ This approach was tested for Chrome and Mozilla Firefox.
 
 First, all the commandline arguments can be retrieved with
 ```sh
+$ cd /path/to/project/TF-Rex/tf-rex
 $ python main.py --help
 ```
 Quickly check if the installation was successful by playing with a pretrained Q-learner.
 ```sh
-$ python main.py --notraining --logdir ./trained-model
+$ python main.py --notraining --logdir ../trained-model
 ```
-This command will restore the pretrained model, stored in `./trained-model` and play the T-rex game.
+This command will restore the pretrained model, stored in `../trained-model` and play the T-rex game.
 
-IMPORTANT: The browser needs to connect with the python side. Therefore, refresh the browser after firing `python main.py --notraining --logdir ./trained-model`.
+IMPORTANT: The browser needs to connect with the python side. Therefore, refresh the browser after firing `python main.py --notraining --logdir ../trained-model`.
 
 ![TF-REX](https://i.makeagif.com/media/5-07-2018/L2GeyT.gif)
 
