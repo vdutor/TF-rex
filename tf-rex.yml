@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tf-rex-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tf-rex
+  template:
+    metadata:
+      labels:
+        app: tf-rex
+    spec:
+      containers:
+      - name: agent
+        image: nginx:alpine
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+        ports:
+        - containerPort: 80
+      - name: train
+        image: tf-rex
+        imagePullPolicy: Never
+        command:
+        - python
+        - main.py
+        - --notraining
+        - --logdir
+        - /trained-model
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - name: app
+          mountPath: /app
+        - name: trained-model
+          mountPath: /trained-model
+        ports:
+      volumes:
+      - name: html
+        hostPath:
+          path: /Users/lita/code_play/TF-rex/game
+          type: Directory
+      - name: app
+        hostPath:
+          path: /Users/lita/code_play/TF-rex/tf-rex
+          type: Directory
+      - name: trained-model
+        hostPath:
+          path: /Users/lita/code_play/TF-rex/trained-model
+          type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tf-rex-service
+spec:
+  selector:
+    app: tf-rex
+  type: NodePort
+  ports:
+  - name: agent
+    port: 8080
+    targetPort: 80
+    nodePort: 30080
+  - name: train
+    port: 9090
+    targetPort: 9090
