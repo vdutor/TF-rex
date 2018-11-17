@@ -2733,7 +2733,7 @@ function onDocumentLoad() {
 
 document.addEventListener('DOMContentLoaded', onDocumentLoad);
 
-var ws = new WebSocket("ws://localhost:9090");
+var ws = new WebSocket("ws://localhost:30090");
 
 function simulateKey(type, keyCode) {
      var eventObj = document.createEventObject ?
